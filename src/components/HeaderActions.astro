@@ -1,0 +1,65 @@
+---
+// Thay cho cụm icon mạng xã hội ở góc trên bên phải: chuyển khóa, và menu "Tiến trình"
+// gồm lưu và khôi phục. Starlight dựng component này hai lần: trên thanh trên cùng (từ 800px)
+// và ở cuối menu di động. Ở menu di động CSS hiện thẳng cả hai nút, không cần bấm mở
+// (xem src/styles/course.css).
+import { COURSES, courseOf } from '../data/courses';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const current = courseOf(Astro.locals.starlightRoute.entry.id);
+---
+
+<nav class="ccf-courses" aria-label="Khóa học">
+	{
+		COURSES.map((c) => (
+			<a href={`${base}/${c.home}`} aria-current={c.id === current ? 'page' : undefined}>
+				{c.short}
+			</a>
+		))
+	}
+</nav>
+<div class="ccf-header-actions ccf-menu">
+	<button type="button" class="ccf-btn ccf-menu-toggle" aria-expanded="false" aria-haspopup="true" title="Lưu hoặc khôi phục tiến trình học">
+		<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+		<span>Tiến trình</span>
+		<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg>
+	</button>
+	<div class="ccf-menu-list">
+		<button type="button" class="ccf-btn ccf-btn-primary ccf-save" title="Tải file JSON gồm bài đã hoàn thành, điểm, ghi chú, sao và comment">
+			<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+			<span>Lưu tiến trình học</span>
+		</button>
+		<button type="button" class="ccf-btn ccf-restore" title="Nạp lại file JSON đã lưu">
+			<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9m0 0-4 4m4-4 4 4M5 3h14"/></svg>
+			<span>Khôi phục</span>
+		</button>
+		<input type="file" class="ccf-restore-input" accept="application/json,.json" hidden />
+		<p class="ccf-menu-hint">Tiến trình chỉ nằm trên trình duyệt này. Lưu thành file để sao lưu hoặc chuyển máy.</p>
+	</div>
+</div>
+
+<script>
+	// Menu "Tiến trình": mở bằng nút, đóng khi bấm ra ngoài, chọn xong hoặc nhấn Escape.
+	const close = (menu: Element) => {
+		menu.removeAttribute('data-open');
+		menu.querySelector('.ccf-menu-toggle')?.setAttribute('aria-expanded', 'false');
+	};
+	document.addEventListener('click', (e) => {
+		const target = e.target as Element | null;
+		const toggle = target?.closest('.ccf-menu-toggle');
+		const own = toggle?.closest('.ccf-menu') ?? null;
+		const wasOpen = own?.hasAttribute('data-open');
+		document.querySelectorAll('.ccf-menu[data-open]').forEach(close);
+		if (toggle && own && !wasOpen) {
+			own.setAttribute('data-open', '');
+			toggle.setAttribute('aria-expanded', 'true');
+		}
+	});
+	document.addEventListener('keydown', (e) => {
+		if (e.key !== 'Escape') return;
+		document.querySelectorAll('.ccf-menu[data-open]').forEach((menu) => {
+			close(menu);
+			menu.querySelector<HTMLElement>('.ccf-menu-toggle')?.focus();
+		});
+	});
+</script>

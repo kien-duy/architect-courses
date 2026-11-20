@@ -1,0 +1,35 @@
+Trích xuất dữ liệu thanh toán từ văn bản trong thẻ <document>.
+
+Quy tắc:
+1. Chỉ ghi giá trị có trong văn bản. Trường nào văn bản không ghi thì để null. Không suy đoán, không dùng "N/A" hay chuỗi rỗng.
+2. Ngày viết theo dạng YYYY-MM-DD. Văn bản viết ngày kiểu Việt Nam (ngày/tháng/năm).
+3. Số tiền là số nguyên VND, không có dấu chấm phân cách.
+4. line_items: mỗi mặt hàng hoặc dịch vụ một dòng. description chỉ là tên hàng, không kèm số lượng hay đơn giá. Số lượng và đơn giá ghi vào quantity và unit_price.
+5. Chiết khấu hoặc giảm giá là một dòng riêng trong line_items, amount là số âm, quantity và unit_price là null.
+6. stated_subtotal và stated_total chép đúng con số văn bản ghi, kể cả khi bạn thấy nó sai. calculated_total do bạn tự cộng: tổng amount của mọi dòng cộng vat_amount (null tính là 0).
+7. document_type: "invoice" cho hóa đơn hoặc phiếu thanh toán có số chứng từ; "receipt" cho biên nhận đã thu tiền; "informal_request" cho thư hoặc tin nhắn đòi tiền không có số chứng từ; còn lại là "other" và mô tả ngắn trong document_type_detail.
+
+<examples>
+<example>
+<document>
+CỬA HÀNG GẠO NGON - MST 0302223334
+Hóa đơn số 77, ngày 02/10/2026, hạn trả 12/10/2026
+Gạo ST25 túi 5kg: 10 túi x 180.000 = 1.800.000
+Giảm giá khai trương: 100.000
+Thành tiền: 1.700.000 (không chịu thuế GTGT)
+</document>
+<output>
+{"document_type":"invoice","document_type_detail":null,"vendor_name":"Cửa hàng Gạo Ngon","vendor_tax_code":"0302223334","invoice_number":"77","issue_date":"2026-10-02","due_date":"2026-10-12","line_items":[{"description":"Gạo ST25 túi 5kg","quantity":10,"unit_price":180000,"amount":1800000},{"description":"Giảm giá khai trương","quantity":null,"unit_price":null,"amount":-100000}],"stated_subtotal":1700000,"vat_amount":null,"stated_total":1700000,"calculated_total":1700000}
+</output>
+<why>Giảm giá thành một dòng âm. Văn bản nói không chịu thuế nên vat_amount là null, không phải 0.</why>
+</example>
+<example>
+<document>
+Anh Tuấn ơi, tiền sửa cửa cuốn hôm 15/9/2026 là 650 nghìn nhé, gồm thay mô tơ 500 nghìn và công 150 nghìn. Em Dũng cửa cuốn.
+</document>
+<output>
+{"document_type":"informal_request","document_type_detail":null,"vendor_name":"Dũng cửa cuốn","vendor_tax_code":null,"invoice_number":null,"issue_date":"2026-09-15","due_date":null,"line_items":[{"description":"Thay mô tơ","quantity":null,"unit_price":null,"amount":500000},{"description":"Công sửa","quantity":null,"unit_price":null,"amount":150000}],"stated_subtotal":null,"vat_amount":null,"stated_total":650000,"calculated_total":650000}
+</output>
+<why>Tin nhắn không có mã số thuế, số chứng từ, hạn trả: tất cả là null. Không ghi số lượng thì quantity là null.</why>
+</example>
+</examples>

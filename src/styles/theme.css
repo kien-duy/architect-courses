@@ -1,0 +1,212 @@
+/* Giao diện Starlight theo hệ thống chung của site. Bảng màu, bo góc, chiều cao điều khiển
+   nằm ở tokens.css (trang chủ cũng dùng); file này thêm font, cỡ chữ và các quy tắc cho
+   trang bài học. Cặp font IBM Plex Sans + IBM Plex Mono được chia bằng script của tasteskill. */
+
+@import './tokens.css';
+
+:root {
+	/* ---- chữ ---- */
+	--sl-font: 'IBM Plex Sans';
+	--sl-font-mono: 'IBM Plex Mono';
+	--sl-line-height: 1.7;
+	--sl-line-height-headings: 1.25;
+	--sl-text-h1: 2.125rem;
+	--sl-text-h2: 1.625rem;
+	--sl-text-h3: 1.3125rem;
+	--sl-text-h4: 1.125rem;
+
+	/* ---- bố cục ---- */
+	--sl-content-width: 44rem;
+}
+
+@media (min-width: 50rem) {
+	:root {
+		--sl-text-body: 1.0625rem; /* 17px: dòng khoảng 80 ký tự trong cột 44rem */
+		--sl-text-h1: 2.5rem;
+		--sl-text-h2: 1.875rem;
+		--sl-text-h3: 1.4375rem;
+		--sl-text-h4: 1.1875rem;
+	}
+}
+
+/* ---------- chữ ---------- */
+body {
+	-webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+h4,
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+	font-weight: 500;
+	letter-spacing: -0.015em;
+	text-wrap: balance;
+}
+h1#_top {
+	letter-spacing: -0.025em;
+	line-height: 1.15;
+}
+.site-title {
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+.sl-markdown-content :is(strong, b, th, dt, summary):not(:where(.not-content *)) {
+	font-weight: 600;
+}
+
+/* Khoảng cách tiêu đề: tiêu đề gần đoạn nó mở ra hơn là đoạn phía trên. */
+.sl-markdown-content :not(h1, h2, h3, h4, h5, h6) + h2:not(:where(.not-content *)) {
+	margin-top: 2.75rem;
+}
+.sl-markdown-content :not(h1, h2, h3, h4, h5, h6) + h3:not(:where(.not-content *)) {
+	margin-top: 2rem;
+}
+.sl-markdown-content :is(h2, h3, h4) + :not(a, strong, em, del, span, input, code, br, :where(.not-content *)) {
+	margin-top: 0.75rem;
+}
+
+/* ---------- link: một kiểu trên toàn site ---------- */
+.sl-markdown-content a:not(:where(.not-content *)) {
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+	text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+	transition:
+		color var(--k-out) var(--k-ease),
+		text-decoration-color var(--k-out) var(--k-ease);
+}
+.sl-markdown-content a:hover:not(:where(.not-content *)) {
+	text-decoration-color: currentColor;
+	transition-duration: var(--k-in);
+}
+
+/* ---------- vòng focus: một kiểu, luôn nhìn thấy ---------- */
+:focus-visible {
+	outline: 2px solid var(--sl-color-text-accent);
+	outline-offset: 2px;
+}
+
+/* ---------- bảng ---------- */
+.sl-markdown-content table:not(:where(.not-content *)) {
+	width: 100%;
+	font-size: var(--sl-text-sm);
+	line-height: 1.55;
+}
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+	padding: 0.625rem 0.875rem;
+	border-bottom-color: var(--sl-color-hairline-light);
+}
+.sl-markdown-content th:not(:where(.not-content *)) {
+	border-bottom-color: var(--sl-color-gray-4);
+	white-space: nowrap;
+}
+@media (min-width: 50rem) {
+	.sl-markdown-content table:not(:where(.not-content *)) {
+		font-size: 0.9375rem;
+	}
+}
+
+/* ---------- code ---------- */
+.sl-markdown-content code:not(:where(.not-content *)) {
+	border-radius: 4px;
+	overflow-wrap: anywhere;
+}
+.expressive-code {
+	--ec-brdRad: var(--k-r-md);
+	--ec-codeFontSize: 0.875rem;
+	--ec-uiFontSize: 0.8125rem;
+}
+.expressive-code .frame {
+	box-shadow: none;
+}
+
+/* ---------- ghi chú (aside) ---------- */
+.starlight-aside {
+	border-radius: var(--k-r-md);
+	border-inline-start-width: 3px;
+}
+
+/* Bảng trên màn hình hẹp: cột giữ bề rộng đọc được, bảng cuộn ngang; code trong bảng không bị bẻ giữa từ. */
+.sl-markdown-content table:not(:where(.not-content *)) code {
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+@media (max-width: 49.99rem) {
+	.sl-markdown-content table:not(:where(.not-content *)) {
+		width: auto;
+		max-width: 100%;
+	}
+	.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+		min-width: 9rem;
+	}
+}
+/* Chừa chỗ cho nút checklist nổi ở góc phải dưới, để nó không che dòng cuối trang. */
+.main-frame main {
+	padding-bottom: 5rem;
+}
+
+/* Ô chọn giao diện: chữ "Tự động" dài hơn bề rộng mặc định (6.25em) của Starlight. */
+starlight-theme-select label {
+	--sl-select-width: 6.75em !important;
+}
+
+/* ---------- khung Starlight theo thang bo góc chung ---------- */
+.pagination-links a,
+.sl-link-card,
+.card,
+button[data-open-modal],
+starlight-toc nav,
+mobile-starlight-toc summary .toggle {
+	border-radius: var(--k-r-sm);
+}
+.pagination-links a,
+.sl-link-card {
+	border-radius: var(--k-r-md);
+	box-shadow: none;
+	transition:
+		transform var(--k-out) var(--k-ease),
+		border-color var(--k-out) var(--k-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+	.pagination-links a:hover,
+	.sl-link-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--sl-color-gray-3);
+		transition-duration: 180ms;
+	}
+}
+.sidebar-content a,
+.sidebar-content summary {
+	border-radius: var(--k-r-sm);
+}
+.sidebar-content a[aria-current='page'] {
+	font-weight: 500;
+}
+/* Mục menu và điều khiển của Starlight đủ cao để bấm trên màn hình cảm ứng. */
+@media (pointer: coarse) {
+	.sidebar-content a,
+	.sidebar-content summary,
+	starlight-toc a,
+	mobile-starlight-toc a {
+		min-height: 2.75rem;
+		display: flex;
+		align-items: center;
+	}
+	starlight-theme-select select,
+	button[data-open-modal],
+	starlight-menu-button button {
+		min-height: 2.75rem;
+		min-width: 2.75rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		scroll-behavior: auto !important;
+	}
+}

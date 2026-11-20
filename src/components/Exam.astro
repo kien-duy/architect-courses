@@ -1,0 +1,26 @@
+---
+// Khung của trang thi thử. Câu hỏi được dựng ở phía trình duyệt (src/scripts/course.ts)
+// vì thứ tự câu được xáo mỗi lần thi.
+interface Props {
+	count: number;
+}
+const { count } = Astro.props;
+---
+
+<section class="ccf-exam not-content" aria-labelledby="ccf-exam-title">
+	<div class="ccf-exam-intro">
+		<h2 id="ccf-exam-title">Bài thi thử</h2>
+		<p class="ccf-quiz-rule">
+			{count} câu · 120 phút · đạt từ 72%. Đồng hồ chạy ngay khi bạn bấm bắt đầu. Hết giờ, bài được nộp tự động.
+		</p>
+		<p class="ccf-quiz-status" hidden></p>
+		<button type="button" class="ccf-btn ccf-btn-primary ccf-exam-start">Bắt đầu thi</button>
+	</div>
+	<div class="ccf-exam-bar" hidden>
+		<span class="ccf-exam-timer" role="timer" aria-label="Thời gian còn lại">120:00</span>
+		<span class="ccf-exam-count" aria-live="polite"></span>
+		<button type="button" class="ccf-btn ccf-btn-primary ccf-exam-submit">Nộp bài</button>
+	</div>
+	<div class="ccf-exam-result" hidden></div>
+	<ol class="ccf-questions ccf-exam-questions"></ol>
+</section>

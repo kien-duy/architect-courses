@@ -1,0 +1,27 @@
+{
+  "document_type": "invoice",
+  "document_type_detail": null,
+  "vendor_name": "Công ty Cổ phần Thiết bị Mạng Đông Á",
+  "vendor_tax_code": "0401122334",
+  "invoice_number": "0004521",
+  "issue_date": "2026-11-10",
+  "due_date": "2026-11-25",
+  "line_items": [
+    {
+      "description": "Switch 24 cổng TP-Link",
+      "quantity": 2,
+      "unit_price": 1200000,
+      "amount": 2400000
+    },
+    {
+      "description": "Cáp mạng Cat6 (cuộn 305m)",
+      "quantity": 1,
+      "unit_price": 1750000,
+      "amount": 1750000
+    }
+  ],
+  "stated_subtotal": 4510000,
+  "vat_amount": 451000,
+  "stated_total": 4961000,
+  "calculated_total": 4601000
+}

@@ -1,0 +1,61 @@
+/* Bảng màu và các hằng số hệ thống dùng chung cho cả site: trang chủ (src/pages/index.astro)
+   và các trang bài học của Starlight. Bảng màu "forest-pale-lime" được chia bằng script của
+   tasteskill cho trang chủ; giao diện tối là bảng màu gốc, giao diện sáng suy ra từ cùng tông
+   xanh rừng. Mọi cặp chữ/nền ở đây đạt tương phản WCAG AA (đã tính, xem báo cáo). */
+
+:root,
+::backdrop {
+	/* ---- màu (tối: bảng màu gốc) ---- */
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #e9efe7;
+	--sl-color-gray-2: #c9d2c8;
+	--sl-color-gray-3: #9aa39a;
+	--sl-color-gray-4: #607061;
+	--sl-color-gray-5: #2f4430;
+	--sl-color-gray-6: #162a17;
+	--sl-color-black: #0f1f10;
+
+	--sl-color-accent-low: #1d3a19;
+	--sl-color-accent: #7fc24a;
+	--sl-color-accent-high: #c6f19d;
+	--sl-color-text-invert: #0f1f10;
+
+	/* Màu phụ của Starlight: bỏ tím, đưa xanh lam về đúng xanh lam. */
+	--sl-hue-blue: 212;
+	--sl-hue-purple: 168;
+	--sl-color-backdrop-overlay: rgb(8 18 9 / 0.7);
+
+	/* ---- hệ thống: bo góc, chiều cao điều khiển, chuyển động ---- */
+	--k-r-sm: 8px; /* nút, ô nhập, điều khiển */
+	--k-r-md: 12px; /* khối bên trong thẻ, bảng nổi */
+	--k-r-lg: 20px; /* thẻ */
+	--k-ctl: 2.5rem; /* chiều cao điều khiển; 44px trên màn hình cảm ứng */
+	--k-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--k-in: 150ms;
+	--k-out: 120ms;
+}
+
+@media (pointer: coarse) {
+	:root {
+		--k-ctl: 2.75rem;
+	}
+}
+
+:root[data-theme='light'],
+[data-theme='light'] ::backdrop {
+	--sl-color-white: #0f1f10;
+	--sl-color-gray-1: #1b2e1c;
+	--sl-color-gray-2: #334534;
+	--sl-color-gray-3: #566256;
+	--sl-color-gray-4: #869186;
+	--sl-color-gray-5: #c5ccc4;
+	--sl-color-gray-6: #e9ede7;
+	--sl-color-gray-7: #f4f6f2;
+	--sl-color-black: #ffffff;
+
+	--sl-color-accent-low: #ddf2cc;
+	--sl-color-accent: #2c6a12;
+	--sl-color-accent-high: #17380a;
+	--sl-color-text-invert: #ffffff;
+	--sl-color-backdrop-overlay: rgb(15 31 16 / 0.45);
+}

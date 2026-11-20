@@ -1,0 +1,696 @@
+---
+// Trang chủ: trang giới thiệu duy nhất của site, dựng theo quy trình của tasteskill 2.5.1
+// (design-taste-frontend). Khung trang là markup và class của bộ kit trong public/assets
+// (chép nguyên, không sửa). Các hình minh họa giao diện dùng đúng class .ccf-* của
+// src/styles/course.css, nên luôn giống giao diện thật của trang bài học.
+// Nội dung trong hình lấy từ bài học thật: câu hỏi của bài 1.1, câu hỏi thi thử domain 1,
+// flashcard của bài "API Gateway", output mẫu của lab 1.7.
+import fs from 'node:fs';
+import path from 'node:path';
+import '../styles/tokens.css';
+import '../styles/course.css';
+import '../styles/home.css';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const kit = `${base}/assets`;
+const site = new URL(`${base}/`, Astro.site ?? 'https://kien-duy.github.io').href;
+const cca = `${base}/cca/`;
+const sd = `${base}/system-design/`;
+const exam = `${base}/cca/on-tap/thi-thu/`;
+const roadmap = `${base}/cca/bat-dau/lo-trinh/`;
+const howto = `${base}/cca/bat-dau/cach-hoc/`;
+const labPrep = `${base}/cca/bat-dau/chuan-bi-lab/`;
+
+// Ngày chụp thật của trang tài liệu hiện trong hình ngăn trượt (public/docs-snapshot sinh lúc build).
+let snapDate = '';
+try {
+	const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/docs-snapshot/index.json'), 'utf8'));
+	snapDate = index.pages?.['https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons']?.date ?? '';
+} catch {
+	/* chưa có bản chụp: hình không ghi ngày */
+}
+
+const today = new Date().toISOString().slice(0, 10);
+const title = 'Khóa học Architect: hai khóa tự học cho lập trình viên';
+const description =
+	'Luyện thi Claude Certified Architect với 29 bài, 5 lab và đề thi thử 60 câu; học System Design với 38 bài và 307 flashcard. Miễn phí, tiếng Việt, không chính thức.';
+
+const domains = [
+	{ n: 1, name: 'Kiến trúc agent và điều phối', meta: '6 bài, 1 lab, 1 quiz', pct: 27 },
+	{ n: 2, name: 'Thiết kế tool và tích hợp MCP', meta: '5 bài, 1 lab, 1 quiz', pct: 18 },
+	{ n: 3, name: 'Cấu hình và quy trình Claude Code', meta: '6 bài, 1 lab, 1 quiz', pct: 20 },
+	{ n: 4, name: 'Prompt engineering và structured output', meta: '6 bài, 1 lab, 1 quiz', pct: 20 },
+	{ n: 5, name: 'Quản lý context và độ tin cậy', meta: '6 bài, 1 lab, 1 quiz', pct: 15 },
+];
+---
+
+<!doctype html>
+<html lang="vi" data-type="software" data-radius="soft" data-ground="sand" data-buttons="solid" data-motion>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content="Hai khóa tự học tiếng Việt, miễn phí: Claude Certified Architect và System Design." />
+		<meta property="og:image" content={`${site}share.jpg`} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+		<meta name="theme-color" content="#0f1f10" />
+		<link rel="canonical" href={site} />
+		<meta name="site-kind" content="software" />
+		<meta name="page-type" content="software" />
+		<!-- Giao diện: bảng màu đã chia (tối) là mặc định; "Sáng" chỉ khi người học đã chọn ở trang bài học. -->
+		<script is:inline>
+			(() => {
+				let t = '';
+				try {
+					t = localStorage.getItem('starlight-theme') || '';
+				} catch {}
+				document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+			})();
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wdth,wght@85..100,400..700&family=IBM+Plex+Mono:wght@400&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href={`${kit}/system.css`} />
+		<link rel="stylesheet" href={`${kit}/ui/cards.css`} />
+		<link rel="stylesheet" href={`${kit}/motion/motion.css`} />
+		<link rel="stylesheet" href={`${kit}/backgrounds/backgrounds.css`} />
+		<link rel="stylesheet" href={`${kit}/layout/layout.css`} />
+		<!-- start.mjs css --page software --palette forest-pale-lime --type plex --radius soft: giữ nguyên như script in ra -->
+		<style is:inline>
+			:root {
+				--p-bg: #0f1f10; --p-surface: #162a17; --p-ink: #ffffff; --p-muted: #9aa39a;
+				--p-accent: #c6f19d; --p-accent-ink: #0f1f10; --p-action: #c6f19d; --p-action-ink: #0f1f10;
+				--p-inv-bg: #ffffff; --p-inv-surface: #ecedec; --p-inv-ink: #0f1f10; --p-inv-muted: #606c60;
+				--p-inv-accent: #0f1f10; --p-inv-accent-ink: #ffffff; --p-inv-action: #0f1f10; --p-inv-action-ink: #ffffff;
+				--font-display: "IBM Plex Sans", system-ui, sans-serif;
+				--font-text: "IBM Plex Sans", system-ui, sans-serif;
+				--font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+				--display-weight: 500;
+				--display-tracking: -0.025em;
+				--display-tracking-xl: -0.035em;
+				--ly-scale: 0.98;
+			}
+		</style>
+		<link rel="stylesheet" href={`${kit}/ui/base.css`} />
+		<script is:inline>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+		<script is:inline src={`${kit}/backgrounds/backgrounds.js`}></script>
+		<script is:inline>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+		<link rel="modulepreload" href={`${kit}/moments/moments.js`} />
+		<link rel="modulepreload" href={`${kit}/moments/lib.js`} />
+		<link rel="modulepreload" href={`${kit}/moments/line-carries-colour/moment.js`} />
+	</head>
+	<body>
+		<!-- type: software
+		     deal: hero collage, nav nav-cards, close close-type, footer footer-statement, rhythm space, buttons solid, mark initial, ground sand
+		     palette forest-pale-lime, type plex (IBM Plex Sans + IBM Plex Mono), radius soft, effect grain-gradient (hero art)
+		     moments: line-carries-colour in #domain (the one section on another ground) -->
+		<header class="nav">
+			<div class="wrap nav__bar">
+				<a class="skip-link" href="#top">Tới nội dung</a>
+				<a class="nav__logo" href="#top"><span class="mark mark--initial" aria-hidden="true">K</span>Khóa học Architect</a>
+				<nav class="nav__links" aria-label="Chính">
+					<div class="nav__item">
+						<a class="nav__link" href="#cca"
+							>Khóa học <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"
+								><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg
+							></a
+						>
+						<div class="nav__menu">
+							<div class="wrap grid">
+								<a class="menu-card span-4" href={roadmap}>
+									<div class="panel">
+										<div class="stage stage--fade-br">
+											<div class="at-corner">
+												<div class="ui ui-mock k-ui k-card" aria-hidden="true">
+													<div class="ccf-questions">
+														<div class="ccf-q is-correct">
+															<p class="ccf-q-text">Which condition should decide whether the loop runs another iteration?</p>
+															<div class="ccf-options">
+																<div class="ccf-opt is-picked"><span class="ccf-letter">B</span><span class="ccf-opt-text">The response <code>stop_reason</code> is <code>tool_use</code></span></div>
+																<div class="ccf-opt"><span class="ccf-letter">C</span><span class="ccf-opt-text">The iteration counter is still below a fixed limit of 10</span></div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<span class="t-card">Lộ trình Claude Architect</span>
+									<span class="t-small muted">29 bài và 5 lab chia theo 14 ngày</span>
+								</a>
+								<a class="menu-card span-4" href="#system-design">
+									<div class="panel">
+										<div class="stage stage--fade-br">
+											<div class="at-corner">
+												<div class="ui ui-mock k-ui k-card" aria-hidden="true">
+													<p class="k-h">Flashcard</p>
+													<div class="ccf-card">
+														<span class="ccf-card-side">Câu hỏi</span>
+														<span class="ccf-card-text">BFF (Backend for Frontend) là gì?</span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<span class="t-card">System Design</span>
+									<span class="t-small muted">38 bài, 65 câu hỏi, 307 flashcard</span>
+								</a>
+								<a class="menu-card span-4" href={exam}>
+									<div class="panel">
+										<div class="stage stage--fade-br">
+											<div class="at-corner">
+												<div class="ui ui-mock k-ui k-win" aria-hidden="true">
+													<div class="k-win__body">
+														<div class="ccf-exam-bar">
+															<span class="ccf-exam-timer">118:42</span><span class="ccf-exam-count">Đã trả lời 1/60</span><span class="ccf-btn ccf-btn-primary">Nộp bài</span>
+														</div>
+														<div class="ccf-questions">
+															<div class="ccf-q">
+																<p class="ccf-q-text">In one response Claude requests three tool calls. How should the results be sent back?</p>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<span class="t-card">Đề thi thử</span>
+									<span class="t-small muted">60 câu trong 120 phút, chấm theo domain</span>
+								</a>
+							</div>
+						</div>
+					</div>
+					<div class="nav__item"><a class="nav__link" href="#domain">Domain</a></div>
+					<div class="nav__item"><a class="nav__link" href="#cong-cu">Công cụ</a></div>
+					<div class="nav__item"><a class="nav__link" href="#faq">Hỏi đáp</a></div>
+				</nav>
+				<div class="nav__actions">
+					<a class="btn btn--primary" href={cca}>Bắt đầu khóa Claude Architect</a>
+				</div>
+				<button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+					<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+				</button>
+			</div>
+		</header>
+
+		<main id="top">
+			<!-- HERO: collage. Chữ ở span-5; bên phải là cửa sổ thi thử trên nền sand, một thẻ kết quả đè góc dưới trái. -->
+			<section class="hero hero--collage" data-enter aria-labelledby="hero-h">
+				<div class="wrap">
+					<div class="hero-text grid hero__grid">
+						<div class="hero__text span-5">
+							<h1 id="hero-h">Hai khóa tự học cho lập trình viên</h1>
+							<p class="hero__lead">
+								Luyện thi Claude Certified Architect qua 29 bài, 5 lab và đề thi thử 60 câu. Học System Design qua 38 bài và 307 flashcard. Miễn phí, bằng tiếng Việt.
+							</p>
+							<div class="btn-row">
+								<a class="btn btn--primary" href={cca}
+									>Bắt đầu khóa Claude Architect<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"
+										><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg
+									></a
+								>
+								<a class="btn btn--secondary" href={sd}>Xem khóa System Design</a>
+							</div>
+							<p class="hero__proof">Tài liệu không chính thức, không do Anthropic thực hiện hay bảo trợ.</p>
+						</div>
+						<div
+							class="hero__art span-6 start-7"
+							role="img"
+							aria-label="Trang thi thử: đồng hồ còn 118 phút 42 giây, câu hỏi tiếng Anh với bốn phương án, và bảng kết quả theo từng domain"
+							data-fx="grain-gradient"
+							data-ui-pause-host
+							data-fx-seed="7"
+						>
+							<div class="ly-piece ly-piece--main k-ui k-win" aria-hidden="true"><div class="ui ui-mock">
+								<div class="k-win__bar">
+									<span class="k-win__dots"><i></i><i></i><i></i></span><span>Thi thử · Claude Certified Architect</span>
+								</div>
+								<div class="k-win__body">
+									<div class="ccf-exam-bar">
+										<span class="ccf-exam-timer">118:42</span><span class="ccf-exam-count">Đã trả lời 1/60</span><span class="ccf-btn ccf-btn-primary">Nộp bài</span>
+									</div>
+									<div class="ccf-questions">
+										<div class="ccf-q">
+											<p class="ccf-q-text">
+												A Messages API response contains a text block followed by a <code>tool_use</code> block, with <code>stop_reason: "tool_use"</code>. What must the application do next?
+											</p>
+											<div class="ccf-options">
+												<div class="ccf-opt"><span class="ccf-letter">A</span><span class="ccf-opt-text">Show the text to the user and end the loop, because the model has replied</span></div>
+												<div class="ccf-opt"><span class="ccf-letter">B</span><span class="ccf-opt-text">Send a new user message asking the model to continue</span></div>
+												<div class="ccf-opt is-picked"><span class="ccf-letter">C</span><span class="ccf-opt-text">Execute the requested tool and return a <code>tool_result</code> block in a <code>user</code> message, then call the API again</span></div>
+												<div class="ccf-opt"><span class="ccf-letter">D</span><span class="ccf-opt-text">Retry the same request until the response contains no <code>tool_use</code> block</span></div>
+											</div>
+										</div>
+										<div class="ccf-q">
+											<p class="ccf-q-text">In one response Claude requests three tool calls. How should the results be sent back?</p>
+											<div class="ccf-options">
+												<div class="ccf-opt"><span class="ccf-letter">A</span><span class="ccf-opt-text">As three <code>tool_result</code> blocks in a single <code>user</code> message, each with its own <code>tool_use_id</code></span></div>
+												<div class="ccf-opt"><span class="ccf-letter">B</span><span class="ccf-opt-text">As three separate API requests, one result per request</span></div>
+												<div class="ccf-opt"><span class="ccf-letter">C</span><span class="ccf-opt-text">As one concatenated string in the system prompt</span></div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div></div>
+							<div class="ly-piece ly-piece--note ui ui-mock k-ui k-card" aria-hidden="true">
+								<p class="k-h">Đạt: 49/60 (82%)</p>
+								<table class="ccf-exam-table">
+									<thead><tr><th>Domain</th><th>Đúng</th><th>Tỉ lệ</th></tr></thead>
+									<tbody>
+										<tr><td>1. Kiến trúc agent</td><td>14/16</td><td>88%</td></tr>
+										<tr><td>2. Tool và MCP</td><td>9/11</td><td>82%</td></tr>
+										<tr class="is-weak"><td>3. Claude Code</td><td>8/12</td><td>67%</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- APP-FRAME: sản phẩm ở kích thước thật. Trái: checklist theo ngày; phải: bài kiểm tra cuối bài 1.1 đã chấm. -->
+			<section class="section" id="cca" aria-labelledby="cca-h">
+				<div class="wrap">
+					<div class="grid">
+						<h2 class="span-5" id="cca-h">Mỗi bài học kết thúc bằng một bài kiểm tra</h2>
+						<div class="span-6 start-7 stack-4">
+							<p>
+								Đọc bài, trả lời câu hỏi tiếng Anh như đề thật, rồi xem lời giải tiếng Việt cho từng phương án. Đúng hết trong một lượt thì bài được tích trong lộ trình 14 ngày.
+							</p>
+							<a class="link" href={roadmap}>Xem lộ trình 2 tuần</a>
+						</div>
+					</div>
+					<div
+						class="ui app fill"
+						role="img"
+						aria-label="Trang bài 1.1 Vòng lặp agent: checklist theo ngày ở bên trái, câu hỏi kiểm tra đã trả lời đúng với lời giải cho từng phương án ở bên phải"
+					>
+						<div class="app__pane app__pane--list" aria-hidden="true"><div class="ui ui-mock k-ui">
+							<div class="app__head">
+								<div class="ccf-tabs"><span class="k-tab is-on">Checklist</span><span class="k-tab">Ghi chú</span></div>
+							</div>
+							<div class="ccf-course-switch"><span class="k-switch is-on">Claude Certified Architect</span><span class="k-switch">System Design</span></div>
+							<div class="ccf-progress"><div class="ccf-progress-bar" style="width: 2.5%"></div></div>
+							<div class="app__body">
+								<p class="ccf-muted">1/40 mục đã hoàn thành.</p>
+								<p class="k-group">Ngày 1</p>
+								<ul class="ccf-list">
+									<li class="is-done"><span class="ccf-check">✓</span><a aria-current="page">1.1 · Vòng lặp agent</a></li>
+									<li><span class="ccf-check"></span><a>1.2 · Kiểm soát vòng lặp</a></li>
+								</ul>
+								<p class="k-group">Ngày 2</p>
+								<ul class="ccf-list">
+									<li><span class="ccf-check"></span><a>1.3 · Coordinator và subagent</a></li>
+									<li><span class="ccf-check"></span><a>1.4 · Phân rã nhiệm vụ</a></li>
+								</ul>
+								<p class="k-group">Ngày 3</p>
+								<ul class="ccf-list">
+									<li><span class="ccf-check"></span><a>1.5 · Hooks và ép buộc quy trình</a></li>
+									<li><span class="ccf-check"></span><a>1.6 · Session, resume và fork</a></li>
+									<li><span class="ccf-check"></span><a>1.7 · Lab — Nhóm phân tích sự cố</a><span class="ccf-tag">Lab</span></li>
+									<li><span class="ccf-check"></span><a>1.8 · Quiz Domain 1</a><span class="ccf-tag">Quiz</span></li>
+								</ul>
+								<p class="k-group">Ngày 4</p>
+								<ul class="ccf-list">
+									<li><span class="ccf-check"></span><a>2.1 · Viết mô tả tool</a></li>
+									<li><span class="ccf-check"></span><a>2.2 · Lỗi có cấu trúc và isError</a></li>
+									<li><span class="ccf-check"></span><a>2.3 · Chia tool cho agent và tool_choice</a></li>
+								</ul>
+							</div>
+						</div>
+						</div><div class="app__pane app__pane--open" aria-hidden="true">
+							<div class="app__doc ui ui-mock k-ui">
+								<p class="app__crumb">1.1 · Vòng lặp agent</p>
+								<p class="k-h">Kiểm tra cuối bài</p>
+								<div class="ccf-questions">
+									<div class="ccf-q is-correct">
+										<p class="ccf-q-text">
+											You are implementing an agentic loop directly on the Messages API. Which condition should decide whether the loop runs another iteration?
+										</p>
+										<div class="ccf-options">
+											<div class="ccf-opt"><span class="ccf-letter">A</span><span class="ccf-opt-text">The assistant text contains a phrase such as 'Task complete'</span></div>
+											<div class="ccf-opt is-picked"><span class="ccf-letter">B</span><span class="ccf-opt-text">The response <code>stop_reason</code> is <code>tool_use</code></span></div>
+											<div class="ccf-opt"><span class="ccf-letter">C</span><span class="ccf-opt-text">The iteration counter is still below a fixed limit of 10</span></div>
+											<div class="ccf-opt"><span class="ccf-letter">D</span><span class="ccf-opt-text">The response contains at least one text block</span></div>
+										</div>
+										<div class="ccf-feedback">
+											<p class="ccf-verdict">✓ Đúng</p>
+											<ul class="ccf-why">
+												<li><strong>✗ A.</strong> Đây là phân tích ngôn ngữ tự nhiên để đoán trạng thái. Model có thể diễn đạt khác đi, hoặc viết câu đó khi vẫn còn gọi tool.</li>
+												<li class="ok"><strong>✓ B.</strong> Đúng. <code>tool_use</code> nghĩa là model đang chờ kết quả tool, nên phải chạy tool rồi gọi lại.</li>
+												<li><strong>✗ C.</strong> Giới hạn số vòng là lưới an toàn, không phải điều kiện dừng chính.</li>
+												<li><strong>✗ D.</strong> Một phản hồi có thể vừa có text vừa có <code>tool_use</code>.</li>
+											</ul>
+											<p class="ccf-keyword"><strong>Từ khóa chốt đáp án:</strong> <code>stop_reason</code> — tín hiệu có cấu trúc, không đọc nội dung text</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- MOMENT line-carries-colour: section duy nhất nằm trên nền khác; một đường kẻ leo lên mang theo nền mới. -->
+			<section class="section ground-inverse" id="domain" data-moment="line-carries-colour" data-moment-opts='{"from": "base"}' aria-labelledby="domain-h">
+				<div class="wrap">
+					<div class="grid grid--top fill">
+						<div class="span-5 section-head">
+							<h2 id="domain-h">Khóa học chia theo 5 domain của đề thi</h2>
+							<p>
+								Mỗi domain có bài học, một lab chạy bằng Claude Code và một bài quiz. Đề thi thử 60 câu trong 120 phút chấm điểm riêng cho từng domain.
+							</p>
+							<p><a class="link" href={exam}>Xem đề thi thử</a></p>
+						</div>
+						<ul class="rows k-domains span-6 start-7">
+							{
+								domains.map((d) => (
+									<li>
+										<span class="rows__name">{d.n}. {d.name}</span>
+										<p>{d.meta}</p>
+										<span class="rows__value">{d.pct}%</span>
+										<span class="k-domains__bar" style={`--v: ${d.pct}`} aria-hidden="true">
+											<i />
+										</span>
+									</li>
+								))
+							}
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- SPLIT-TEXT-LEFT: khóa System Design, bên phải là flashcard thật của bài "API Gateway". -->
+			<section class="section" id="system-design" style="--hm: 2" aria-labelledby="sd-h">
+				<div class="wrap">
+					<div class="grid grid--top fill">
+						<div class="span-5 split-col">
+							<h2 id="sd-h">System Design từ nền tảng tới bài thiết kế thực chiến</h2>
+							<p class="t-lead">
+								38 bài đi từ hiệu năng và độ trễ, qua load balancer, cache và queue, tới các bài thiết kế có lời giải đầy đủ. Phần lõi dựa trên The System Design Primer.
+							</p>
+							<ul class="stack-2">
+								<li>65 câu hỏi kiểm tra cuối bài</li>
+								<li>307 flashcard, lật bằng một lần bấm</li>
+								<li>10 bài chủ đề hiện đại viết bằng tiếng Việt</li>
+							</ul>
+							<p><a class="link" href={sd}>Xem khóa System Design</a></p>
+						</div>
+						<div
+							class="frame frame--split frame--lit frame--fill span-6 start-7"
+							role="img"
+							aria-label="Flashcard của bài API Gateway: thẻ đã lật hiện câu trả lời về BFF, bên dưới là các nút chuyển thẻ"
+						>
+							<div class="stage stage--fade-b">
+								<div class="at-rise fit to-edge" style="--fit-max: 480px; --ax: max(24px, 50% - 240px); --ay: 56px; --ay-sm: 24px">
+									<div class="ui ui-mock k-ui k-win k-flash" aria-hidden="true">
+										<div class="k-win__body">
+											<p class="k-h">Flashcard</p>
+											<p class="ccf-quiz-rule">9 thẻ ôn nhanh. Bấm vào thẻ để lật, dùng phím ← → để chuyển thẻ.</p>
+											<div class="ccf-card is-flipped">
+												<span class="ccf-card-side">Trả lời</span>
+												<span class="ccf-card-text"
+													>Mỗi loại client (web, mobile) có một gateway riêng, trả dữ liệu đúng dạng client đó cần, tránh một gateway chung phình to và phục vụ kém mọi bên.</span
+												>
+											</div>
+											<div class="ccf-quiz-actions">
+												<span class="ccf-btn">← Thẻ trước</span><span class="ccf-btn ccf-btn-primary">Thẻ sau →</span><span class="ccf-btn">Xáo thẻ</span><span class="ccf-result">Thẻ 2/9</span>
+											</div>
+											<p class="k-h k-h--next">Kiểm tra cuối bài</p>
+											<div class="ccf-questions">
+												<div class="ccf-q">
+													<p class="ccf-q-text">Vì sao GraphQL thường khó tận dụng cache HTTP/CDN hơn REST?</p>
+													<div class="ccf-options">
+														<div class="ccf-opt"><span class="ccf-letter">A</span><span class="ccf-opt-text">Vì GraphQL không chạy trên HTTP</span></div>
+														<div class="ccf-opt"><span class="ccf-letter">B</span><span class="ccf-opt-text">Vì GraphQL luôn trả dữ liệu nhị phân</span></div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- FEATURES-2x2 (hai màn hình): bốn công cụ đi kèm bài học, mỗi thẻ một hình giao diện thật. -->
+			<section class="section g2" id="cong-cu" aria-labelledby="cong-cu-h">
+				<div class="wrap">
+					<div class="group">
+						<div class="section-head">
+							<h2 id="cong-cu-h">Công cụ học nằm ngay trong trang. <span class="muted">Không cần tài khoản.</span></h2>
+						</div>
+						<div class="grid">
+							<article class="card card--row card--open m-nolift span-6">
+								<h3>Tài liệu chính thức mở ngay cạnh bài học</h3>
+								<p>Link tới tài liệu của Anthropic mở ở nửa phải màn hình, kèm ngày chụp.</p>
+								<div class="panel" role="img" aria-label="Một đoạn bài học có link tài liệu gốc, và ngăn trượt mở trang Stop reasons and fallback">
+									<div class="stage stage--fade-b">
+										<div class="at-rise fit" style="--fit-max: 460px; --ax: max(24px, 50% - 230px); --ay: 40px; --ay-sm: 16px">
+											<div class="ui ui-mock k-ui k-win" aria-hidden="true">
+												<div class="k-lesson">
+													<p>Mỗi phản hồi của Messages API có trường <code>stop_reason</code> cho biết vì sao model dừng sinh output.</p>
+													<p>Tài liệu gốc: <a>Stop reasons and fallback ◨</a></p>
+												</div>
+												<div class="ccf-drawer k-drawer">
+													<div class="ccf-drawer-head">
+														<div class="ccf-drawer-title">
+															<strong>Stop reasons and fallback</strong>
+															<span class="ccf-drawer-meta">platform.claude.com{snapDate && ` · bản chụp ngày ${snapDate}`}</span>
+														</div>
+														<span class="ccf-drawer-source">Mở trang gốc ↗</span>
+														<span class="ccf-icon-btn">✕</span>
+													</div>
+													<div class="ccf-drawer-body">
+														<ul class="k-toc">
+															<li>Quick reference</li>
+															<li>The stop_reason field</li>
+															<li>Stop reason values</li>
+															<li>Best practices for handling stop reasons</li>
+														</ul>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</article>
+							<article class="card card--row card--open m-nolift span-6">
+								<h3>Ghi chú cho từng bài</h3>
+								<p>Mỗi bài có một ô ghi chú riêng trong checklist nổi, tự lưu khi bạn gõ.</p>
+								<div class="panel" role="img" aria-label="Bảng checklist ở thẻ Ghi chú, với một ghi chú cho bài 1.1 Vòng lặp agent">
+									<div class="stage stage--fade-b">
+										<div class="at-right" style="--ax: 32px; --ay: 40px">
+											<div class="ui ui-mock k-ui" aria-hidden="true" style="width: 360px">
+											<div class="ccf-panel">
+												<div class="ccf-panel-head">
+													<div class="ccf-tabs"><span class="k-tab">Checklist</span><span class="k-tab is-on">Ghi chú</span></div>
+													<span class="ccf-icon-btn">✕</span>
+												</div>
+												<div class="ccf-panel-body">
+													<span class="ccf-note-label">Ghi chú cho bài: <strong>1.1 · Vòng lặp agent</strong></span>
+													<div class="ccf-textarea">
+														Dừng vòng lặp theo stop_reason, không đọc text.<br />max_tokens: output bị cắt, chưa phải là xong.<br />tool_result nằm trong message user, khớp tool_use_id.
+													</div>
+													<p class="ccf-saved">Đã lưu</p>
+												</div>
+											</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</article>
+						</div>
+					</div>
+					<div class="grid">
+						<article class="card card--row card--open m-nolift span-6">
+							<h3>Lưu tiến trình thành một file</h3>
+							<p>Bài đã xong, điểm và ghi chú chỉ nằm trên trình duyệt. Tải về một file JSON để sao lưu hoặc chuyển máy.</p>
+							<div class="panel" role="img" aria-label="Menu Tiến trình với hai nút Lưu tiến trình học và Khôi phục, và thông báo đã tải file">
+								<div class="stage stage--fade-b">
+									<div class="at-rise fit to-edge" style="--fit-max: 460px; --ax: max(24px, 50% - 230px); --ay: 40px; --ay-sm: 16px">
+										<div class="ui ui-mock k-ui k-win k-save" aria-hidden="true">
+											<div class="k-save__bar">
+												<span class="ccf-btn ccf-btn-primary">Lưu tiến trình học</span><span class="ccf-btn">Khôi phục</span>
+											</div>
+											<p class="k-save__done">Đã tải file tiến trình học.</p>
+											<pre><b>tien-trinh-hoc-{today}.json</b>
+{`{
+  "app": "architect-courses",
+  "version": 1,
+  "lessons": {
+    "cca/domain-1/01-agentic-loop": {
+      "title": "1.1 · Vòng lặp agent",
+      "done": true,
+      "best": 1,
+      "attempts": 1,
+      "note": "Dừng vòng lặp theo stop_reason"
+    },
+    "cca/domain-1/02-kiem-soat-vong-lap": {
+      "title": "1.2 · Kiểm soát vòng lặp",
+      "attempts": 1
+    }
+  }
+}`}</pre>
+										</div>
+									</div>
+								</div>
+							</div>
+						</article>
+						<article class="card card--row card--open m-nolift span-6">
+							<h3>Chạy lab bằng Claude Code</h3>
+							<p>Mỗi domain có một lab chạy bằng Claude Code với tài khoản đang đăng nhập. Không cần API key.</p>
+							<div class="panel" role="img" aria-label="Terminal chạy lab 1.7: lệnh claude -p và các bước tool_use, tool_result của vòng lặp agent">
+								<div class="stage stage--fade-b">
+									<div class="at-rise fit to-edge" style="--fit-max: 480px; --ax: max(24px, 50% - 240px); --ay: 40px; --ay-sm: 16px">
+										<div class="ui ui-mock k-ui k-term" aria-hidden="true">
+											<div class="k-win__bar">
+												<span class="k-win__dots"><i></i><i></i><i></i></span><span>labs/domain-1</span>
+											</div>
+											<pre><b>$ claude -p "Liệt kê các file trong data/ và cho biết mỗi file nói về sự cố gì, mỗi file một dòng." --model haiku --allowedTools "Read,Glob,Grep"</b>
+system/init   model=claude-haiku-4-5-20251001
+assistant  → <em>tool_use</em>: Bash
+user       ← tool_result
+assistant  → <em>tool_use</em>: Read
+user       ← tool_result
+assistant  → <em>tool_use</em>: Read
+user       ← tool_result
+assistant  → <em>tool_use</em>: Read
+user       ← tool_result
+assistant  → text (416 ký tự)
+result        subtype=success turns=5 stop_reason=end_turn
+<b>$ cat .claude/agents/incident-analyst.md</b>
+tools: Read, Grep, Glob</pre>
+										</div>
+									</div>
+								</div>
+							</div>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<!-- FAQ: mọi câu trả lời mở sẵn. -->
+			<section class="section" id="faq" style="--hm: 2" aria-labelledby="faq-h">
+				<div class="wrap">
+					<div class="grid grid--top">
+						<div class="span-5 section-head">
+							<h2 id="faq-h">Câu hỏi thường gặp về khóa học</h2>
+							<p>Về chi phí, tính chính thức của khóa học và dữ liệu của bạn.</p>
+							<p><a class="link" href={howto}>Đọc cách dùng trang học</a></p>
+							<div class="ui ui-mock k-ui k-rate" role="img" aria-label="Thẻ đánh giá cuối bài: 4 trên 5 sao và một góp ý cho bài học">
+								<div class="ccf-rating" aria-hidden="true">
+									<p class="k-h">Đánh giá bài học</p>
+									<div class="ccf-stars">
+										<span class="ccf-star is-on">★</span><span class="ccf-star is-on">★</span><span class="ccf-star is-on">★</span><span class="ccf-star is-on">★</span><span class="ccf-star">★</span><span class="ccf-star-label">4/5 · Hay</span>
+									</div>
+									<span class="ccf-note-label">Bài này nên cải thiện điều gì?</span>
+									<div class="ccf-textarea">Thêm một ví dụ stop_reason là max_tokens.</div>
+									<p class="ccf-rating-foot"><span class="ccf-muted">Chỉ lưu trên trình duyệt này.</span><span class="ccf-saved">Đã lưu trên trình duyệt này</span></p>
+								</div>
+							</div>
+						</div>
+						<div class="faq span-6 start-7">
+							<div class="faq__item">
+								<h3>Khóa học có mất phí không?</h3>
+								<p>Không. Cả hai khóa miễn phí và không cần đăng ký. Bài học phát hành theo giấy phép CC BY 4.0, code theo MIT.</p>
+							</div>
+							<div class="faq__item">
+								<h3>Đây có phải khóa chính thức của Anthropic không?</h3>
+								<p>Không. Đây là tài liệu tự học không chính thức, không do Anthropic thực hiện hay bảo trợ. Bài học dẫn link tới tài liệu chính thức để bạn đối chiếu.</p>
+							</div>
+							<div class="faq__item">
+								<h3>Tiến trình học được lưu ở đâu?</h3>
+								<p>Trên trình duyệt của bạn, không gửi lên máy chủ nào. Nút Lưu tiến trình học tải toàn bộ về một file JSON, nút Khôi phục nạp lại file đó.</p>
+							</div>
+							<div class="faq__item">
+								<h3>Chạy lab của khóa học cần chuẩn bị gì?</h3>
+								<p>Claude Code đã cài và đã đăng nhập, cùng mã nguồn khóa học. Lab không cần API key.</p>
+							</div>
+							<div class="faq__item">
+								<h3>Câu hỏi kiểm tra viết bằng tiếng gì?</h3>
+								<p>Câu hỏi và phương án bằng tiếng Anh như đề thật. Lời giải cho từng phương án bằng tiếng Việt.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<!-- FOOTER.CLOSING: close-type (nút lớn chạy hết .wrap) + footer-statement (nền sand). -->
+		<footer class="footer closing footer--statement g2m" id="contact" aria-labelledby="close-h">
+			<div class="wrap">
+				<div class="closing__cta close--type">
+					<div class="section-head">
+						<h2 id="close-h">Bài đầu tiên dài 12 phút</h2>
+						<p>Bài 1.1, Vòng lặp agent, mở đầu khóa Claude Certified Architect.</p>
+					</div>
+					<a class="btn btn--primary btn--xl btn--wide" href={cca}
+						>Bắt đầu khóa Claude Architect<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"
+							><path class="m-arrow__stem" d="M1 6h8"></path><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"></path></svg
+						></a
+					>
+				</div>
+				<div class="closing__links">
+					<div class="grid">
+						<div class="span-4 stack-4">
+							<a class="nav__logo" href="#top">Khóa học Architect</a>
+							<p class="footer__lede">Hai khóa tự học tiếng Việt, miễn phí.</p>
+						</div>
+						<div class="span-2 footer__col">
+							<h3>Khóa học</h3>
+							<ul>
+								<li><a href="#cca">Claude Architect</a></li>
+								<li><a href="#system-design">System Design</a></li>
+								<li><a href="#domain">5 domain</a></li>
+							</ul>
+						</div>
+						<div class="span-2 footer__col">
+							<h3>Bắt đầu</h3>
+							<ul>
+								<li><a href={roadmap}>Lộ trình 2 tuần</a></li>
+								<li><a href={howto}>Cách dùng trang học</a></li>
+								<li><a href={labPrep}>Chuẩn bị chạy lab</a></li>
+							</ul>
+						</div>
+						<div class="span-2 footer__col">
+							<h3>Trang này</h3>
+							<ul>
+								<li><a href="#cong-cu">Công cụ</a></li>
+								<li><a href="#faq">Hỏi đáp</a></li>
+							</ul>
+						</div>
+						<div class="span-2 footer__col">
+							<h3>Nguồn</h3>
+							<ul>
+								<li><a href="https://github.com/kien-duy/architect-courses">Mã nguồn trên GitHub</a></li>
+								<li><a href="https://github.com/donnemartin/system-design-primer">The System Design Primer</a></li>
+							</ul>
+						</div>
+					</div>
+					<div class="footer__legal">
+						<span>&copy; 2026 Khóa học Architect. Bài học theo CC BY 4.0, code theo MIT.</span>
+						<span class="footer__note">“Claude” và “Anthropic” là nhãn hiệu của Anthropic, PBC.</span>
+					</div>
+				</div>
+			</div>
+		</footer>
+
+		<nav class="actionbar" aria-label="Hành động nhanh">
+			<a class="btn btn--primary" href={cca}>Bắt đầu khóa Claude Architect</a>
+		</nav>
+
+		<script is:inline type="module" src={`${kit}/system.js`}></script>
+		<script is:inline type="module" src={`${kit}/motion/motion.js`}></script>
+		<script is:inline type="module" src={`${kit}/layout/layout.js`}></script>
+	</body>
+</html>

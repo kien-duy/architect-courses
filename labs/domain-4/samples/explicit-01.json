@@ -1,0 +1,33 @@
+{
+  "document_type": "invoice",
+  "document_type_detail": null,
+  "vendor_name": "Công ty TNHH Văn phòng phẩm Sao Mai",
+  "vendor_tax_code": "0312345678",
+  "invoice_number": "HD-2026-0117",
+  "issue_date": "2026-11-03",
+  "due_date": "2026-11-18",
+  "line_items": [
+    {
+      "description": "Giấy A4 Double A (ram)",
+      "quantity": 20,
+      "unit_price": 85000,
+      "amount": 1700000
+    },
+    {
+      "description": "Bút bi Thiên Long (hộp)",
+      "quantity": 5,
+      "unit_price": 60000,
+      "amount": 300000
+    },
+    {
+      "description": "Mực in HP 107A",
+      "quantity": 2,
+      "unit_price": 950000,
+      "amount": 1900000
+    }
+  ],
+  "stated_subtotal": 3900000,
+  "vat_amount": 312000,
+  "stated_total": 4212000,
+  "calculated_total": 4212000
+}

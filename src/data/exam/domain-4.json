@@ -1,0 +1,315 @@
+[
+  {
+    "domain": 4,
+    "q": "A release-notes generator has the rule 'NEVER mention internal ticket IDs.' The notes no longer contain ticket IDs, but they still include internal project codenames and the names of staging servers. Which prompt change is most likely to fix the whole class of leaks?",
+    "options": [
+      {
+        "text": "Add two more rules: 'NEVER mention codenames' and 'NEVER mention server names'",
+        "why": "Mỗi luật chỉ chặn đúng một thứ. Lần sau sẽ lộ một loại thông tin nội bộ khác mà chưa ai kịp viết luật."
+      },
+      {
+        "text": "Explain the reason: the notes are published to customers, so nothing that only makes sense inside the company should appear, with ticket IDs and codenames as examples",
+        "why": "Khi biết mục đích (văn bản công khai cho khách hàng), model suy rộng được sang mọi loại thông tin nội bộ, kể cả loại chưa được liệt kê."
+      },
+      {
+        "text": "Write the existing rule in bold capital letters and repeat it at the end of the prompt",
+        "why": "Luật về ticket ID đã được tuân theo. Nhấn mạnh nó không mở rộng phạm vi sang codename hay tên máy chủ."
+      },
+      {
+        "text": "Lower the temperature to reduce creative wording",
+        "why": "Codename có sẵn trong dữ liệu đầu vào. Model chép lại chứ không sáng tác ra, nên temperature không liên quan."
+      }
+    ],
+    "answer": 1,
+    "keyword": "nêu **lý do** của chỉ dẫn → model suy rộng đúng hướng",
+    "relearn": "cca/domain-4/01-tieu-chi-ro-rang#nói-rõ-cả-phần-bỏ-qua",
+    "relearnLabel": "4.1 · Nói rõ cả phần bỏ qua"
+  },
+  {
+    "domain": 4,
+    "q": "A CI reviewer is prompted: 'Report bugs and security vulnerabilities in this diff.' A third of its comments are about indentation and import ordering, which the project's linter already enforces. What is the best prompt change?",
+    "options": [
+      {
+        "text": "Add 'Focus on what matters most'",
+        "why": "'Quan trọng nhất' là phán đoán mơ hồ. Model vẫn có thể coi định dạng là quan trọng."
+      },
+      {
+        "text": "Limit the review to five comments per pull request",
+        "why": "Giới hạn số lượng không chọn đúng loại comment. Năm comment đó vẫn có thể là về thụt lề."
+      },
+      {
+        "text": "Remove the word 'bugs' so only security issues are reported",
+        "why": "Cách này bỏ luôn các phát hiện về lỗi logic, thứ nhóm thật sự cần."
+      },
+      {
+        "text": "Add an explicit do-not-report list: formatting, import order, and naming, because the linter already covers them",
+        "why": "Model được yêu cầu tìm vấn đề sẽ báo cả vùng xám nếu không ai nói bỏ qua. Danh sách không báo cáo, kèm lý do, đóng vùng xám đó lại."
+      }
+    ],
+    "answer": 3,
+    "keyword": "luôn viết cả danh sách **không báo cáo**",
+    "relearn": "cca/domain-4/01-tieu-chi-ro-rang#nói-rõ-cả-phần-bỏ-qua",
+    "relearnLabel": "4.1 · Nói rõ cả phần bỏ qua"
+  },
+  {
+    "domain": 4,
+    "q": "To improve tool selection, a team added 40 few-shot examples covering every request type they could think of. Input cost per call tripled, answers started echoing phrases from the examples, and the two request types that were actually ambiguous are still misrouted. What should they do?",
+    "options": [
+      {
+        "text": "Keep two to four examples that target the ambiguous request types, each with a one-line reason for the chosen tool",
+        "why": "Ví dụ nên nhắm vào chỗ model hay phân vân, và lý do đi kèm giúp nó suy rộng. Trường hợp rõ ràng không cần ví dụ, chỉ tốn token."
+      },
+      {
+        "text": "Add 40 more examples for the two ambiguous request types",
+        "why": "Chi phí tăng tiếp và model càng dễ bám vào câu chữ của ví dụ thay vì nguyên tắc."
+      },
+      {
+        "text": "Remove all examples and rely on tool descriptions",
+        "why": "Mô tả tool đã có mà hai loại yêu cầu mơ hồ vẫn bị chọn sai. Đó chính là chỗ ví dụ có ích."
+      },
+      {
+        "text": "Shuffle the order of the examples on every call",
+        "why": "Xáo thứ tự không giảm số ví dụ, không giảm chi phí, và phá hiệu quả cache của prompt."
+      }
+    ],
+    "answer": 0,
+    "keyword": "vài ví dụ **có chủ đích** cho chỗ mơ hồ, kèm lý do",
+    "relearn": "cca/domain-4/02-few-shot#ví-dụ-cho-trường-hợp-mơ-hồ",
+    "relearnLabel": "4.2 · Ví dụ cho trường hợp mơ hồ"
+  },
+  {
+    "domain": 4,
+    "q": "An extraction prompt states 'Write all dates as YYYY-MM-DD.' Its three few-shot examples, copied from an older version of the prompt, show dates such as '03/11/2026'. Most outputs use the slash format. What is the root cause?",
+    "options": [
+      {
+        "text": "The model does not understand ISO date notation",
+        "why": "Model viết được ISO khi tín hiệu nhất quán. Ở đây nó nhận hai tín hiệu trái nhau."
+      },
+      {
+        "text": "The instruction is placed too early in the prompt",
+        "why": "Vị trí của câu chỉ dẫn không phải vấn đề chính khi ví dụ đang mâu thuẫn trực tiếp với nó."
+      },
+      {
+        "text": "The examples contradict the instruction, and the model tends to imitate the examples; the examples must be corrected",
+        "why": "Ví dụ là tín hiệu mạnh về hình dạng output. Khi ví dụ và lời dặn trái nhau, output thường theo ví dụ. Ví dụ phải được coi là một phần của đặc tả và sửa cùng lúc với chỉ dẫn."
+      },
+      {
+        "text": "Three examples are too few to teach a date format",
+        "why": "Ba ví dụ đã đủ để dạy định dạng, và đó chính là lý do output theo đúng định dạng sai trong ví dụ."
+      }
+    ],
+    "answer": 2,
+    "keyword": "ví dụ mâu thuẫn với chỉ dẫn → model theo **ví dụ**",
+    "relearn": "cca/domain-4/02-few-shot#những-lỗi-hay-gặp-khi-dùng-few-shot",
+    "relearnLabel": "4.2 · Những lỗi hay gặp khi dùng few-shot"
+  },
+  {
+    "domain": 4,
+    "q": "An extraction service sends each document with a single tool, `record_invoice`, and the default `tool_choice`. Its code reads the first `tool_use` block of the response. For documents that are not really invoices, the model answers in prose ('This looks like a delivery note...') and the code crashes. Which change makes the service robust?",
+    "code": "block = next(b for b in response.content if b.type == \"tool_use\")\ninvoice = block.input",
+    "options": [
+      {
+        "text": "Wrap the line in try/except and skip the document",
+        "why": "Code không còn crash, nhưng văn bản bị bỏ qua lặng lẽ và không ai biết vì sao."
+      },
+      {
+        "text": "Add 'Always answer in JSON' to the system prompt",
+        "why": "Lời dặn không ép được model gọi tool. Với `auto`, câu trả lời bằng text vẫn hợp lệ."
+      },
+      {
+        "text": "Set `tool_choice` to `{\"type\": \"none\"}` and parse the text reply",
+        "why": "`none` cấm gọi tool, nên mọi phản hồi đều là text không có cấu trúc."
+      },
+      {
+        "text": "Force the tool with `tool_choice`, and give the schema a `document_type` enum with an 'other' value and nullable fields so non-invoices can be represented honestly",
+        "why": "Ép tool bảo đảm luôn có khối `tool_use`. Enum có 'other' và trường nullable cho model một cách trung thực để nói 'đây không phải hóa đơn' ngay trong cấu trúc, thay vì bịa số liệu hóa đơn."
+      }
+    ],
+    "answer": 3,
+    "keyword": "`auto` có thể trả text → ép tool **và** cho schema lối thoát",
+    "relearn": "cca/domain-4/03-structured-output#tool_choice",
+    "relearnLabel": "4.3 · tool_choice"
+  },
+  {
+    "domain": 4,
+    "q": "A nightly CI job runs `claude -p \"...\" --output-format json --json-schema \"$SCHEMA\"` and pipes the result into a script that reads `.structured_output.items[0]`. Most nights it works; occasionally the script fails because `structured_output` is missing. What should the script do?",
+    "options": [
+      {
+        "text": "Check that the result is not an error and that `structured_output` is present before using it, and treat a missing field as a failed run",
+        "why": "Lượt chạy có thể kết thúc mà không có output hợp lệ, ví dụ khi model từ chối hoặc hết số lần thử nộp kết quả đúng schema. Code phải kiểm tra trước khi đọc dữ liệu."
+      },
+      {
+        "text": "Parse the `result` text field with a regular expression instead",
+        "why": "Khi không có output có cấu trúc, phần text cũng không bảo đảm chứa JSON đúng schema. Regex chỉ che lỗi."
+      },
+      {
+        "text": "Remove `--json-schema` and ask for JSON in the prompt",
+        "why": "Cách này bỏ luôn sự bảo đảm về hình dạng ở những đêm đang chạy tốt."
+      },
+      {
+        "text": "Add `\"format\": \"json\"` to every property in the schema",
+        "why": "Từ khóa `format` chỉ là chú thích trong Claude Code và không liên quan tới việc trường kết quả bị thiếu."
+      }
+    ],
+    "answer": 0,
+    "keyword": "kiểm tra `structured_output` **có mặt** trước khi dùng",
+    "relearn": "cca/domain-4/03-structured-output#structured-outputs-và-strict",
+    "relearnLabel": "4.3 · Structured outputs và strict"
+  },
+  {
+    "domain": 4,
+    "q": "A service uses structured outputs with a large schema for long legal documents. For the longest documents, `json.loads` fails on the response text even though the schema is enforced. The failing responses all have `stop_reason: \"max_tokens\"`. What is the correct fix?",
+    "options": [
+      {
+        "text": "Disable schema enforcement for long documents",
+        "why": "Schema không phải nguyên nhân. Bỏ nó đi chỉ thêm lỗi cú pháp vào một output vẫn bị cắt."
+      },
+      {
+        "text": "Append the missing closing braces in code before parsing",
+        "why": "JSON parse được nhưng dữ liệu bị cắt cụt: các trường và phần tử phía sau biến mất mà không có dấu hiệu nào."
+      },
+      {
+        "text": "Check `stop_reason` and, for truncated responses, retry with a higher `max_tokens` or split the document",
+        "why": "Bảo đảm đúng schema không áp dụng khi output bị cắt vì hết token. Phải nhận ra trường hợp này qua `stop_reason` và cho model đủ chỗ để viết hết."
+      },
+      {
+        "text": "Retry the identical request until it parses",
+        "why": "Cùng giới hạn token thì output lại bị cắt ở đúng chỗ đó."
+      }
+    ],
+    "answer": 2,
+    "keyword": "`max_tokens` → output bị cắt, **có thể không khớp schema**",
+    "relearn": "cca/domain-4/03-structured-output#structured-outputs-và-strict",
+    "relearnLabel": "4.3 · Structured outputs và strict"
+  },
+  {
+    "domain": 4,
+    "q": "A pipeline retries invoice extractions until a validator confirms that `total` equals the sum of the line items. After the change, the validator passes on every invoice, but an audit finds that for some invoices the extracted `total` no longer matches the figure printed on the document. What is the best redesign?",
+    "options": [
+      {
+        "text": "Remove the validator, since it causes the model to change values",
+        "why": "Validator phát hiện đúng sai lệch. Vấn đề là cách hệ thống phản ứng với sai lệch đó."
+      },
+      {
+        "text": "Extract the printed figure and the computed sum as separate fields, tell the model to keep printed values as written, cap the retries, and send remaining mismatches to a human",
+        "why": "Khi mục tiêu của retry là 'làm cho khớp', model sửa số liệu để khớp. Tách số văn bản ghi khỏi số tự tính, giới hạn retry và chuyển phần còn lệch cho người duyệt giữ được sự thật của nguồn."
+      },
+      {
+        "text": "Increase the retry limit so the model has more attempts to get it right",
+        "why": "Nhiều lượt hơn là nhiều cơ hội hơn để số liệu bị sửa cho khớp."
+      },
+      {
+        "text": "Make `total` a string so the model copies it verbatim",
+        "why": "Đổi kiểu không ngăn model viết một chuỗi khác, và làm code phía sau không tính toán được."
+      }
+    ],
+    "answer": 1,
+    "keyword": "retry 'cho đến khi khớp' → model **sửa số cho khớp**; tách `stated` và `calculated`",
+    "relearn": "cca/domain-4/04-validation-retry#tự-phát-hiện-mâu-thuẫn",
+    "relearnLabel": "4.4 · Tự phát hiện mâu thuẫn"
+  },
+  {
+    "domain": 4,
+    "q": "A booking-extraction tool uses a strict schema with `start_date` and `end_date` as required date strings. Some outputs have `end_date` earlier than `start_date`. Where should this rule be enforced?",
+    "options": [
+      {
+        "text": "In the JSON schema, using `minimum` on `end_date`",
+        "why": "`minimum` là ràng buộc số, không so sánh được hai trường với nhau, và ràng buộc số còn không được hỗ trợ ở chế độ strict."
+      },
+      {
+        "text": "In the tool description: 'end_date must be after start_date'",
+        "why": "Mô tả giúp giảm lỗi nhưng không bảo đảm. Vẫn cần một nơi phát hiện khi luật bị vi phạm."
+      },
+      {
+        "text": "Nowhere; strict mode already guarantees valid dates",
+        "why": "Strict bảo đảm kiểu và cấu trúc. Hai ngày đúng định dạng vẫn có thể vô lý khi đặt cạnh nhau."
+      },
+      {
+        "text": "In validation code that runs after extraction, and on failure retry with the specific error message",
+        "why": "Quan hệ giữa hai trường là luật ngữ nghĩa. Schema không biểu diễn được, nên code phải kiểm tra sau khi nhận output và gửi lại kèm lỗi cụ thể."
+      }
+    ],
+    "answer": 3,
+    "keyword": "luật giữa các trường = **ngữ nghĩa** → kiểm tra bằng code",
+    "relearn": "cca/domain-4/04-validation-retry#hai-lớp-kiểm-tra",
+    "relearnLabel": "4.4 · Hai lớp kiểm tra"
+  },
+  {
+    "domain": 4,
+    "q": "A team wrote a new extraction prompt and immediately submitted 80,000 documents through the Message Batches API. When the batch ended, they found that the prompt mishandled multi-page documents, making about 30% of the results unusable. What should they have done first?",
+    "options": [
+      {
+        "text": "Split the documents into eight batches of 10,000",
+        "why": "Chia nhỏ giúp quản lý dễ hơn, nhưng cả tám batch vẫn dùng cùng một prompt lỗi."
+      },
+      {
+        "text": "Run the prompt on a small, varied sample with synchronous calls, validate the outputs, and refine the prompt before the full run",
+        "why": "Một lỗi trong prompt nhân lên theo số request. Thử trên mẫu nhỏ có cả trường hợp biên cho phản hồi trong vài phút và sửa được trước khi trả tiền cho cả lô."
+      },
+      {
+        "text": "Use the synchronous API for all 80,000 documents",
+        "why": "Cách này tốn gấp đôi và vẫn chạy cùng một prompt chưa được kiểm tra."
+      },
+      {
+        "text": "Poll the batch more frequently so the problem is noticed earlier",
+        "why": "Trạng thái batch chỉ cho biết bao nhiêu request đã xong. Nó không cho biết nội dung kết quả có dùng được hay không."
+      }
+    ],
+    "answer": 1,
+    "keyword": "tinh chỉnh prompt trên **mẫu nhỏ** trước khi chạy batch lớn",
+    "relearn": "cca/domain-4/05-batch#thử-trên-mẫu-nhỏ-trước",
+    "relearnLabel": "4.5 · Thử trên mẫu nhỏ trước"
+  },
+  {
+    "domain": 4,
+    "q": "A developer submits 2,000 summarization requests in one batch and assigns each result to a document by its line number in the results file. A spot check shows some summaries attached to the wrong documents. What is the correct fix?",
+    "options": [
+      {
+        "text": "Give every request a unique `custom_id` derived from the document ID and match results by that field",
+        "why": "Thứ tự kết quả của batch không được bảo đảm trùng thứ tự request. `custom_id` là cách duy nhất để nối kết quả với request gốc."
+      },
+      {
+        "text": "Sort the results file by completion time before matching",
+        "why": "Thời điểm hoàn thành không liên quan tới thứ tự gửi. Các request được xử lý đồng thời."
+      },
+      {
+        "text": "Submit the documents in batches of one so order cannot change",
+        "why": "Cách này bỏ hết lợi ích quản lý của batch và vẫn không cần thiết khi đã có `custom_id`."
+      },
+      {
+        "text": "Ask the model to repeat the document title at the start of each summary",
+        "why": "Dựa vào text do model sinh ra để định danh là không chắc chắn: tiêu đề có thể trùng hoặc bị viết khác đi."
+      }
+    ],
+    "answer": 0,
+    "keyword": "thứ tự kết quả không bảo đảm → khớp bằng `custom_id`",
+    "relearn": "cca/domain-4/05-batch#custom_id",
+    "relearnLabel": "4.5 · custom_id"
+  },
+  {
+    "domain": 4,
+    "q": "A review system analyzes each changed file in its own pass, and every pass reports no problems. After the merge, production breaks: a function's parameter order was changed in `billing.ts`, but its caller in `checkout.ts`, also modified in the same pull request, still passes arguments in the old order. What was missing from the design?",
+    "options": [
+      {
+        "text": "A larger model for the per-file passes",
+        "why": "Mỗi lượt chỉ thấy một file. Model lớn đến đâu cũng không thấy được nơi gọi nằm ở file khác."
+      },
+      {
+        "text": "A second per-file pass over `billing.ts`",
+        "why": "Xem lại riêng `billing.ts` vẫn thấy một hàm hợp lệ. Lỗi chỉ hiện ra khi đặt nó cạnh `checkout.ts`."
+      },
+      {
+        "text": "An integration pass that examines interactions across the changed files, such as changed signatures and their call sites",
+        "why": "Lượt theo file bắt lỗi cục bộ. Lỗi về hợp đồng giữa hai file chỉ thấy được ở một lượt nhìn xuyên file, nên cần cả hai loại lượt."
+      },
+      {
+        "text": "A self-review step in which the code-writing session rereads its own diff",
+        "why": "Phiên đã viết code mang theo giả định của chính nó và dễ xác nhận thay vì phát hiện sự không đồng bộ."
+      }
+    ],
+    "answer": 2,
+    "keyword": "lượt theo file + lượt **tích hợp** xuyên file",
+    "relearn": "cca/domain-4/06-review-nhieu-luot#lượt-theo-file-và-lượt-tích-hợp",
+    "relearnLabel": "4.6 · Lượt theo file và lượt tích hợp"
+  }
+]

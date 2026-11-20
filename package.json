@@ -1,0 +1,23 @@
+{
+  "name": "architect-courses",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "node scripts/snapshot-docs.mjs --if-missing && astro dev",
+    "start": "node scripts/snapshot-docs.mjs --if-missing && astro dev",
+    "build": "node scripts/snapshot-docs.mjs && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "snapshot": "node scripts/snapshot-docs.mjs",
+    "check": "python3 scripts/check-links.py"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.3.6",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "marked": "^18.2.1",
+    "sanitize-html": "^2.18.2"
+  }
+}

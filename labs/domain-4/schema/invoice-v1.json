@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "properties": {
+    "vendor_name": {"type": "string"},
+    "vendor_tax_code": {"type": "string"},
+    "invoice_number": {"type": "string"},
+    "issue_date": {"type": "string"},
+    "due_date": {"type": "string"},
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {"type": "string"},
+          "amount": {"type": "integer"}
+        },
+        "required": ["description", "amount"],
+        "additionalProperties": false
+      }
+    },
+    "subtotal": {"type": "integer"},
+    "vat_amount": {"type": "integer"},
+    "total": {"type": "integer"}
+  },
+  "required": ["vendor_name", "vendor_tax_code", "invoice_number", "issue_date", "due_date", "line_items", "subtotal", "vat_amount", "total"],
+  "additionalProperties": false
+}

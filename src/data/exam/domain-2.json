@@ -1,0 +1,289 @@
+[
+  {
+    "domain": 2,
+    "q": "An agent is connected to two MCP servers: `wiki` and `helpdesk`. Each exposes a tool called `search` whose description is just 'Search.' For the question 'How do I reset a customer's two-factor device?', the agent searches support tickets about half the time instead of the internal wiki. Which change addresses the root cause?",
+    "options": [
+      {
+        "text": "Rewrite each description to say what corpus the tool searches, what it returns, and when to use it rather than the other one",
+        "why": "Hai tool có tên đầy đủ khác nhau (`mcp__wiki__search`, `mcp__helpdesk__search`) nhưng mô tả giống hệt, nên model không có cơ sở để phân biệt. Mô tả nêu rõ kho dữ liệu, kết quả và ranh giới sử dụng sửa đúng nguyên nhân."
+      },
+      {
+        "text": "Connect only one of the two servers at a time",
+        "why": "Cách này tránh được nhầm lẫn nhưng làm agent mất một nửa khả năng. Tool của nhiều server vốn được thiết kế để dùng cùng lúc."
+      },
+      {
+        "text": "Set `tool_choice` to `any`",
+        "why": "`any` buộc model gọi một tool nào đó. Nó không giúp model chọn đúng giữa hai tool giống nhau."
+      },
+      {
+        "text": "Increase the number of results each `search` tool returns",
+        "why": "Nhiều kết quả hơn từ sai kho dữ liệu vẫn là sai kho dữ liệu."
+      }
+    ],
+    "answer": 0,
+    "keyword": "mô tả giống hệt nhau → model chọn **ngẫu nhiên**; nêu rõ kho dữ liệu và ranh giới",
+    "relearn": "cca/domain-2/01-mo-ta-tool#tool-chồng-lấn-và-cách-tách",
+    "relearnLabel": "2.1 · Tool chồng lấn và cách tách"
+  },
+  {
+    "domain": 2,
+    "q": "A `schedule_meeting` tool has a `start_time` parameter described only as 'Start time'. The agent sends values such as 'tomorrow 3pm', '15:00' and '2026-11-20T15:00', and the calendar backend rejects most of them. What is the most direct improvement?",
+    "options": [
+      {
+        "text": "Add retry logic that calls the tool again with the same value",
+        "why": "Gọi lại với cùng một giá trị sai định dạng sẽ thất bại y như cũ."
+      },
+      {
+        "text": "State the exact format in the parameter description, for example ISO 8601 with a UTC offset and a sample value, and say how to treat relative dates",
+        "why": "Model chỉ biết về tham số qua tên, schema và mô tả. Mô tả 'Start time' không nói gì về định dạng. Nêu định dạng kèm ví dụ ngay trong mô tả tham số cho model thông tin nó đang thiếu."
+      },
+      {
+        "text": "Switch to a model with a larger context window",
+        "why": "Vấn đề không phải thiếu chỗ trong context mà là thiếu thông tin về định dạng."
+      },
+      {
+        "text": "Remove the parameter and let the backend guess the time from the conversation",
+        "why": "Backend không thấy hội thoại. Bỏ tham số là bỏ luôn dữ liệu cần để đặt lịch."
+      }
+    ],
+    "answer": 1,
+    "keyword": "định dạng tham số phải nằm trong **mô tả tham số**, kèm ví dụ",
+    "relearn": "cca/domain-2/01-mo-ta-tool#mô-tả-tốt-gồm-những-gì",
+    "relearnLabel": "2.1 · Mô tả tốt gồm những gì"
+  },
+  {
+    "domain": 2,
+    "q": "A clinical assistant uses an MCP tool `get_lab_results`. When a patient simply has no lab results on file, the tool returns `isError: true` with the text 'No results'. The agent retries three times and then tells the clinician that the lab system is down. How should the tool be changed?",
+    "options": [
+      {
+        "text": "Keep `isError: true` but add `isRetryable: true` so the agent retries faster",
+        "why": "Truy vấn đã chạy đúng. Thử lại nhanh hơn chỉ lặp lại cùng một kết quả và vẫn dẫn tới kết luận sai."
+      },
+      {
+        "text": "Return a JSON-RPC protocol error instead",
+        "why": "Lỗi giao thức dành cho request sai cấu trúc hoặc tool không tồn tại. Ở đây không có lỗi nào cả."
+      },
+      {
+        "text": "Return a successful result (`isError: false`) with an empty list and an explicit count of zero",
+        "why": "Không có kết quả là một câu trả lời hợp lệ, không phải lần truy cập thất bại. Báo nó như lỗi khiến agent thử lại vô ích và kết luận sai rằng hệ thống hỏng."
+      },
+      {
+        "text": "Tell the agent in the system prompt to ignore errors from this tool",
+        "why": "Khi đó agent cũng bỏ qua cả lỗi thật, ví dụ khi hệ thống xét nghiệm thực sự không truy cập được."
+      }
+    ],
+    "answer": 2,
+    "keyword": "không có kết quả = **thành công** với danh sách rỗng, không phải lỗi",
+    "relearn": "cca/domain-2/02-loi-co-cau-truc#lỗi-truy-cập-khác-kết-quả-rỗng",
+    "relearnLabel": "2.2 · Lỗi truy cập khác kết quả rỗng"
+  },
+  {
+    "domain": 2,
+    "q": "A finance agent calls an MCP tool `read_payroll`. The HR API answers 403 because the agent's service account is not allowed to read payroll data. Which tool response lets the agent react correctly?",
+    "options": [
+      {
+        "text": "`isError: true`, category transient, `isRetryable: true`",
+        "why": "Thiếu quyền không tự hết sau vài giây. Đánh dấu là tạm thời khiến agent thử lại vô ích."
+      },
+      {
+        "text": "`isError: false` with an empty payroll record",
+        "why": "Kết quả rỗng khiến agent kết luận nhân viên không có dữ liệu lương, trong khi sự thật là nó không được phép đọc."
+      },
+      {
+        "text": "Let the server process exit so the session notices the failure",
+        "why": "Server chết làm mất mọi tool của nó và không cho model biết vì sao. Lỗi mà model phản ứng được phải trả về như kết quả tool."
+      },
+      {
+        "text": "`isError: true`, category permission, `isRetryable: false`, and a message stating that the service account lacks payroll access and who can grant it",
+        "why": "Đây là lỗi quyền truy cập: thử lại không có ích, và agent cần biết lý do để chuyển yêu cầu cho người có quyền thay vì thử cách khác."
+      }
+    ],
+    "answer": 3,
+    "keyword": "403 → **permission**, không thử lại, chuyển cho người có quyền",
+    "relearn": "cca/domain-2/02-loi-co-cau-truc#bốn-nhóm-lỗi",
+    "relearnLabel": "2.2 · Bốn nhóm lỗi"
+  },
+  {
+    "domain": 2,
+    "q": "A developer's MCP server returns the following for a failed call, and the client rejects the result as malformed. What is wrong?",
+    "code": "{\n  \"isError\": true,\n  \"content\": {\n    \"errorCategory\": \"validation\",\n    \"isRetryable\": false,\n    \"message\": \"date must be YYYY-MM-DD\"\n  }\n}",
+    "options": [
+      {
+        "text": "`content` must be an array of content blocks; the structured details belong in a text block as JSON, or in `structuredContent`",
+        "why": "Theo đặc tả MCP, `content` là mảng các khối nội dung như `text` hay `image`. Các trường như `errorCategory` là quy ước riêng, nên phải nằm trong một khối `text` dạng JSON hoặc trong `structuredContent`."
+      },
+      {
+        "text": "`isError` must be spelled `is_error` in MCP",
+        "why": "`is_error` là tên trường trong khối `tool_result` của Messages API. Trong kết quả `tools/call` của MCP, tên đúng là `isError`."
+      },
+      {
+        "text": "Errors must always be sent as JSON-RPC `error` objects, never as results",
+        "why": "Ngược lại: lỗi khi thực thi tool nên là một `result` có `isError: true` để model đọc và tự sửa. Trường `error` của JSON-RPC dành cho lỗi giao thức."
+      },
+      {
+        "text": "`errorCategory` is not one of the categories defined by the MCP specification",
+        "why": "Đặc tả không định nghĩa nhóm lỗi nào. Tên trường này là quy ước của bạn; vấn đề là nó nằm sai chỗ, không phải sai tên."
+      }
+    ],
+    "answer": 0,
+    "keyword": "`content` của MCP là **mảng khối nội dung**; chi tiết lỗi nằm trong khối `text` hoặc `structuredContent`",
+    "relearn": "cca/domain-2/02-loi-co-cau-truc#cấu-trúc-một-lỗi-tốt",
+    "relearnLabel": "2.2 · Cấu trúc một lỗi tốt"
+  },
+  {
+    "domain": 2,
+    "q": "A chat application sends its full tool list with every Messages API request. For one specific step, 'summarize the conversation so far', the model occasionally calls the search tool instead of writing the summary. The team wants to guarantee a text answer for that request without removing the tool definitions. Which setting does this?",
+    "options": [
+      {
+        "text": "`tool_choice: {\"type\": \"auto\"}`",
+        "why": "`auto` là hành vi hiện tại: model được tự quyết định gọi tool, và đôi khi nó gọi."
+      },
+      {
+        "text": "`tool_choice: {\"type\": \"none\"}`",
+        "why": "`none` cấm model gọi tool ở request đó trong khi định nghĩa tool vẫn được gửi kèm, nên phản hồi chắc chắn là text."
+      },
+      {
+        "text": "`tool_choice: {\"type\": \"any\"}`",
+        "why": "`any` làm điều ngược lại: buộc model phải gọi một tool."
+      },
+      {
+        "text": "Setting `disable_parallel_tool_use` to `true`",
+        "why": "Cờ này giới hạn số tool được gọi trong một phản hồi. Với `auto`, model vẫn có thể gọi một tool."
+      }
+    ],
+    "answer": 1,
+    "keyword": "đảm bảo **không** gọi tool ở một request → `none`",
+    "relearn": "cca/domain-2/03-chia-tool-va-tool-choice#bốn-giá-trị-của-tool_choice",
+    "relearnLabel": "2.3 · Bốn giá trị của tool_choice"
+  },
+  {
+    "domain": 2,
+    "q": "An order-extraction service uses `tool_choice: {\"type\": \"any\"}` with three tools, so every response is a tool call. Even so, about 2% of calls arrive with `quantity` as the string \"3\" instead of the number 3, or with a required field missing. The model supports forced tool use. What should be added?",
+    "options": [
+      {
+        "text": "A second request asking the model to double-check its arguments",
+        "why": "Kiểm tra lại bằng một lượt nữa tốn gấp đôi chi phí và vẫn là xác suất."
+      },
+      {
+        "text": "`tool_choice: {\"type\": \"tool\", ...}` naming one specific tool",
+        "why": "Ép một tool cụ thể quyết định tool nào được gọi, không quyết định tham số có đúng schema hay không. Nó còn làm mất khả năng chọn giữa ba tool."
+      },
+      {
+        "text": "`strict: true` on the tool definitions, so tool inputs are guaranteed to match the JSON Schema",
+        "why": "`tool_choice` đảm bảo có lời gọi tool; `strict: true` đảm bảo input khớp schema về kiểu dữ liệu và trường bắt buộc. Kết hợp hai thứ cho cả hai đảm bảo."
+      },
+      {
+        "text": "A longer description on each tool repeating the schema in prose",
+        "why": "Mô tả tốt giảm lỗi nhưng không loại bỏ được hết. Yêu cầu ở đây là đảm bảo, không phải cải thiện."
+      }
+    ],
+    "answer": 2,
+    "keyword": "`any` đảm bảo **có** lời gọi; `strict: true` đảm bảo **input đúng schema**",
+    "relearn": "cca/domain-2/03-chia-tool-va-tool-choice#giới-hạn-của-việc-ép-tool",
+    "relearnLabel": "2.3 · Giới hạn của việc ép tool"
+  },
+  {
+    "domain": 2,
+    "q": "A developer keeps a `db` MCP server in user scope that points at a personal sandbox database. They join a project whose committed `.mcp.json` also defines a server named `db`, pointing at the team's staging database. Inside that project, which definition does Claude Code use?",
+    "options": [
+      {
+        "text": "Both, with tools from each server merged under one name",
+        "why": "Khi trùng tên, Claude Code chỉ kết nối một lần, dùng định nghĩa ở nơi ưu tiên cao nhất."
+      },
+      {
+        "text": "The user-scope one, because personal configuration always wins",
+        "why": "Thứ tự ưu tiên là local, rồi project, rồi user. Phạm vi user đứng sau phạm vi project."
+      },
+      {
+        "text": "A merge of the two entries, field by field",
+        "why": "Các trường không được trộn giữa các phạm vi. Toàn bộ mục của nơi thắng được dùng."
+      },
+      {
+        "text": "The project-scope one from `.mcp.json`, because project scope takes precedence over user scope and the whole entry is used",
+        "why": "Với server trùng tên, thứ tự ưu tiên là local, project, user. Ở đây không có định nghĩa local nên mục trong `.mcp.json` thắng, và nó được dùng nguyên vẹn."
+      }
+    ],
+    "answer": 3,
+    "keyword": "trùng tên server: **local > project > user**, không trộn trường",
+    "relearn": "cca/domain-2/04-cau-hinh-mcp#ba-phạm-vi-cấu-hình",
+    "relearnLabel": "2.4 · Ba phạm vi cấu hình"
+  },
+  {
+    "domain": 2,
+    "q": "A team wants Claude Code to read channel history and post messages in the company's chat platform, a widely used commercial product with a maintained MCP server. An engineer proposes writing a custom MCP server from scratch 'to keep control'. What is the better recommendation?",
+    "options": [
+      {
+        "text": "Write the custom server; community servers cannot be used in Claude Code",
+        "why": "Claude Code kết nối được với bất kỳ MCP server nào đúng giao thức, kể cả server của nhà cung cấp hay cộng đồng."
+      },
+      {
+        "text": "Skip MCP and paste channel exports into the prompt",
+        "why": "Dán tay không cho agent khả năng đọc dữ liệu mới hay gửi tin nhắn, và làm đầy context."
+      },
+      {
+        "text": "Use the existing maintained server for this standard integration, and reserve custom servers for workflows unique to the team",
+        "why": "Tích hợp phổ biến đã có server xử lý sẵn xác thực, phân trang và trường hợp biên. Tự viết lại tốn công mà không thêm giá trị. Server tự viết dành cho hệ thống và quy trình riêng của nhóm."
+      },
+      {
+        "text": "Expose the chat platform through the built-in `Bash` tool with `curl`",
+        "why": "Cách này bắt model tự ghép lệnh gọi API và xử lý xác thực qua shell: không có mô tả tool, không có lỗi có cấu trúc, và khó giới hạn quyền."
+      }
+    ],
+    "answer": 2,
+    "keyword": "tích hợp phổ biến → **server có sẵn**; tự viết cho quy trình riêng",
+    "relearn": "cca/domain-2/04-cau-hinh-mcp#server-có-sẵn-hay-tự-viết",
+    "relearnLabel": "2.4 · Server có sẵn hay tự viết"
+  },
+  {
+    "domain": 2,
+    "q": "An Agent SDK application registers an MCP server under the key `inventory`. The server has two tools: `get_stock` (read-only) and `adjust_stock` (writes). The team wants `get_stock` to run without a permission prompt while `adjust_stock` still goes through approval. Which `allowed_tools` entry achieves this?",
+    "options": [
+      {
+        "text": "`mcp__inventory__get_stock`",
+        "why": "Tên đầy đủ của tool MCP là `mcp__<server>__<tool>`. Liệt kê đúng một tool này tự duyệt `get_stock`, còn `adjust_stock` vẫn đi qua luồng xin quyền."
+      },
+      {
+        "text": "`mcp__inventory__*`",
+        "why": "Ký tự đại diện tự duyệt mọi tool của server, kể cả `adjust_stock`."
+      },
+      {
+        "text": "`inventory.get_stock`",
+        "why": "Đây không phải quy ước đặt tên của tool MCP. Luật này không khớp tool nào."
+      },
+      {
+        "text": "`get_stock`",
+        "why": "Tên trần thiếu tiền tố `mcp__inventory__` nên không khớp tool của server."
+      }
+    ],
+    "answer": 0,
+    "keyword": "tên tool MCP: `mcp__<server>__<tool>`; `*` là **mọi** tool của server",
+    "relearn": "cca/domain-2/04-cau-hinh-mcp#tool-được-phát-hiện-và-đặt-tên-thế-nào",
+    "relearnLabel": "2.4 · Tool được phát hiện và đặt tên thế nào"
+  },
+  {
+    "domain": 2,
+    "q": "While checking whether `formatCurrency` can be deleted, an agent greps for the name and finds its definition in `utils/money.ts` plus a single other hit: `utils/index.ts`, which contains `export { formatCurrency as money } from './money'`. It is about to report that the function is unused. What should it do first?",
+    "options": [
+      {
+        "text": "Report the function as unused, since only one file references it",
+        "why": "File duy nhất đó là một module bọc xuất lại hàm dưới tên khác. Nơi sử dụng thật sẽ không chứa chuỗi `formatCurrency`."
+      },
+      {
+        "text": "Grep for the re-exported name `money` and for imports of `utils`, then Read the files found to confirm real call sites",
+        "why": "Hàm được xuất lại qua module bọc với tên mới, nên phải lần theo tên mới và nơi import module bọc. Đây là bước Grep tiếp theo trong chuỗi khảo sát tăng dần."
+      },
+      {
+        "text": "Glob for files named `money*`",
+        "why": "Glob tìm theo tên file. Nơi gọi hàm nằm trong nội dung của các file có tên bất kỳ."
+      },
+      {
+        "text": "Read every file in the repository to be safe",
+        "why": "Đọc toàn bộ repo tốn context trong khi hai lần Grep có mục tiêu trả lời được câu hỏi."
+      }
+    ],
+    "answer": 1,
+    "keyword": "module bọc đổi tên khi xuất lại → Grep **cả tên mới**",
+    "relearn": "cca/domain-2/05-tool-co-san#khảo-sát-codebase-từng-bước",
+    "relearnLabel": "2.5 · Khảo sát codebase từng bước"
+  }
+]

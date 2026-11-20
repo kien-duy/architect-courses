@@ -1,0 +1,16 @@
+Nội dung bài học do khóa này viết trong thư mục src/content/ được phát hành theo giấy phép
+Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+Bạn được tự do chia sẻ và chỉnh sửa nội dung cho mọi mục đích, kể cả thương mại,
+với điều kiện ghi nguồn, dẫn link tới giấy phép và nêu rõ nếu có thay đổi.
+
+Toàn văn giấy phép: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Giấy phép này không áp dụng cho:
+- mã nguồn trong kho này (xem LICENSE-CODE);
+- bản chụp tài liệu chính thức sinh ra lúc build trong public/docs-snapshot/,
+  thuộc bản quyền của chủ sở hữu tương ứng.
+- phần nội dung lấy từ The System Design Primer (Donne Martin, CC BY 4.0) trong khóa
+  System Design: giữ giấy phép và ghi công của bản gốc;
+- hình và nội dung của ByteByteGo trong mục "Hình minh họa ByteByteGo":
+  bản quyền thuộc ByteByteGo.

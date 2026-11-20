@@ -1,0 +1,56 @@
+---
+// Ghi đè Footer của Starlight: thêm flashcard, quiz, đánh giá ở cuối bài, và nhúng
+// dữ liệu cho checklist nổi, ngăn trượt tài liệu (xem src/scripts/course.ts).
+import Default from '@astrojs/starlight/components/Footer.astro';
+import { getCollection } from 'astro:content';
+import LessonEnd from './LessonEnd.astro';
+import Exam from './Exam.astro';
+import { COURSES, courseOf } from '../data/courses';
+
+const { entry } = Astro.locals.starlightRoute;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const items = (await getCollection('docs'))
+	.filter((e) => e.data.lesson)
+	.sort((a, b) => a.id.localeCompare(b.id))
+	.map((e) => {
+		const l = e.data.lesson!;
+		return {
+			id: e.id,
+			title: e.data.title,
+			course: l.course ?? courseOf(e.id) ?? 'cca',
+			group: l.group ?? (l.day ? `Ngày ${l.day}` : 'Khác'),
+			order: l.day ?? 0,
+			kind: l.kind,
+			href: `${base}/${e.id}/`,
+		};
+	})
+	// Khóa chia theo ngày xếp theo ngày; khóa khác giữ thứ tự tên file.
+	.sort((a, b) => a.order - b.order);
+
+const courses = COURSES.map((c) => ({ id: c.id, name: c.name, href: `${base}/${c.home}` }));
+const lesson = entry.data.lesson;
+const quiz = lesson ? (entry.data.quiz ?? null) : null;
+const cards = entry.data.cards ?? [];
+// Ngân hàng câu hỏi thi thử: mỗi domain một file JSON trong src/data/exam/.
+const examFiles = import.meta.glob('../data/exam/*.json', { eager: true, import: 'default' });
+const exam =
+	lesson?.kind === 'exam'
+		? Object.keys(examFiles)
+				.sort()
+				.flatMap((k) => examFiles[k] as any[])
+		: null;
+const data = { base, current: entry.id, course: courseOf(entry.id), courses, items, quiz, exam, cards };
+// "<" được thoát để nội dung câu hỏi không thể đóng thẻ script.
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+---
+
+{exam && <Exam count={exam.length} />}
+{(lesson || cards.length > 0) && <LessonEnd kind={lesson?.kind ?? 'lesson'} quiz={quiz ?? []} cards={cards.length} tracked={!!lesson} />}
+
+<Default><slot /></Default>
+
+<script type="application/json" id="ccf-data" set:html={json} />
+<script>
+	import '../scripts/course.ts';
+</script>

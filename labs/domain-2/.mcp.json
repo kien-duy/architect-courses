@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "shop": {
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/server.py"
+      ],
+      "env": {
+        "SHOP_DESCRIPTIONS": "${SHOP_DESCRIPTIONS:-full}",
+        "SHOP_ERRORS": "${SHOP_ERRORS:-structured}",
+        "SHOP_LOG": "${SHOP_LOG:-}"
+      },
+      "alwaysLoad": true
+    }
+  }
+}

@@ -1,0 +1,226 @@
+[
+  {
+    "domain": 1,
+    "q": "A Messages API response contains a text block ('I will check the order status.') followed by a `tool_use` block, with `stop_reason: \"tool_use\"`. What must the application do next?",
+    "options": [
+      { "text": "Show the text to the user and end the loop, because the model has replied", "why": "Model chưa xong: nó đang chờ kết quả tool. Dừng ở đây khiến người dùng không bao giờ nhận được câu trả lời." },
+      { "text": "Send a new user message asking the model to continue", "why": "Request tiếp theo không hợp lệ nếu thiếu `tool_result` cho khối `tool_use` vừa nhận." },
+      { "text": "Execute the requested tool and return a `tool_result` block in a `user` message, then call the API again", "why": "`stop_reason` là `tool_use` nên vòng lặp phải chạy tool, trả kết quả kèm `tool_use_id`, rồi gọi lại model." },
+      { "text": "Retry the same request until the response contains no `tool_use` block", "why": "Gọi lại cùng request không cung cấp kết quả tool mà model cần." }
+    ],
+    "answer": 2,
+    "keyword": "`stop_reason: tool_use` → chạy tool, trả `tool_result`",
+    "relearn": "cca/domain-1/01-agentic-loop#stop_reason-quyết-định-bước-tiếp-theo",
+    "relearnLabel": "1.1 · stop_reason quyết định bước tiếp theo"
+  },
+  {
+    "domain": 1,
+    "q": "In one response Claude requests three tool calls. How should the results be sent back?",
+    "options": [
+      { "text": "As three `tool_result` blocks in a single `user` message, each with its own `tool_use_id`", "why": "Mọi kết quả của một lượt đi chung trong một message `user`, mỗi kết quả khớp với lời gọi của nó qua `tool_use_id`." },
+      { "text": "As three separate API requests, one result per request", "why": "Mỗi request phải trả lời đủ mọi khối `tool_use` của lượt trước. Trả từng cái một làm lịch sử thiếu kết quả." },
+      { "text": "As one concatenated string in the system prompt", "why": "System prompt không chứa kết quả tool, và ghép chuỗi làm mất liên kết giữa kết quả và lời gọi." },
+      { "text": "Only the result of the first tool; Claude will re-request the others", "why": "Thiếu `tool_result` cho các lời gọi còn lại làm request không hợp lệ." }
+    ],
+    "answer": 0,
+    "keyword": "nhiều `tool_result` trong **một** message `user`",
+    "relearn": "cca/domain-1/01-agentic-loop#tự-viết-vòng-lặp-bằng-messages-api",
+    "relearnLabel": "1.1 · Tự viết vòng lặp bằng Messages API"
+  },
+  {
+    "domain": 1,
+    "q": "A team caps its hand-written agent loop at 5 iterations 'so it always terminates'. Complex tickets now end half-finished. Which statement describes the right design?",
+    "options": [
+      { "text": "Raise the cap to 50; a higher fixed number is the correct termination condition", "why": "Con số lớn hơn vẫn là điều kiện dừng sai loại: tác vụ hợp lệ có thể cần nhiều hơn, và tác vụ ngắn không cần đến nó." },
+      { "text": "Remove every limit; `stop_reason` alone is always sufficient in production", "why": "Bỏ hết giới hạn để mặc agent chạy không kiểm soát khi gặp prompt mở hoặc lỗi lặp." },
+      { "text": "Stop when the model's text says the ticket is resolved", "why": "Đây là đoán trạng thái từ ngôn ngữ tự nhiên, không đáng tin." },
+      { "text": "Terminate on `stop_reason`, and keep an iteration or budget cap only as a safety net sized well above normal runs", "why": "`stop_reason` là điều kiện dừng chính. Giới hạn vòng hoặc ngân sách chỉ là lưới an toàn, đặt đủ cao để không cắt tác vụ bình thường." }
+    ],
+    "answer": 3,
+    "keyword": "giới hạn vòng = **lưới an toàn**, không phải điều kiện dừng chính",
+    "relearn": "cca/domain-1/01-agentic-loop#ba-cách-dừng-vòng-lặp-sai",
+    "relearnLabel": "1.1 · Ba cách dừng vòng lặp sai"
+  },
+  {
+    "domain": 1,
+    "q": "An SDK agent that orchestrates several subagents is given `max_budget_usd=5`. Which statement is accurate?",
+    "options": [
+      { "text": "The cap applies only to the main agent; subagent spend is tracked separately", "why": "Chi phí của subagent cộng vào tổng của truy vấn và chịu chung trần ngân sách." },
+      { "text": "Subagent spend counts toward the cap, and actual spend can slightly exceed it because the check happens after a response arrives", "why": "Ngân sách bao gồm subagent. SDK so sánh sau khi mỗi phản hồi về, nên tổng thực tế có thể vượt trần một chút." },
+      { "text": "The run is guaranteed to stop at exactly $5.00", "why": "Phản hồi làm chạm trần vẫn hoàn tất và được tính, nên không có bảo đảm dừng đúng con số." },
+      { "text": "The cap pauses the agent and waits for human approval to continue", "why": "Chạm trần thì lượt chạy kết thúc với `error_max_budget_usd`, không có bước chờ duyệt." }
+    ],
+    "answer": 1,
+    "keyword": "ngân sách **gồm subagent**, có thể vượt một chút",
+    "relearn": "cca/domain-1/02-kiem-soat-vong-lap#giới-hạn-số-turn-và-chi-phí",
+    "relearnLabel": "1.2 · Giới hạn số turn và chi phí"
+  },
+  {
+    "domain": 1,
+    "q": "A team must guarantee that an agent can never run shell commands, whatever the permission mode. Which option achieves this?",
+    "options": [
+      { "text": "Leave `Bash` out of `allowed_tools`", "why": "`allowed_tools` là danh sách tự duyệt. Tool không có trong đó vẫn tồn tại và có thể chạy tùy permission mode." },
+      { "text": "Use `permission_mode=\"plan\"`", "why": "Permission mode có thể đổi và không phải là lệnh cấm một tool cụ thể." },
+      { "text": "Add `Bash` to `disallowed_tools`", "why": "`disallowed_tools` chặn tool được liệt kê bất kể các cấu hình khác." },
+      { "text": "Tell the agent in the system prompt that shell access is forbidden", "why": "Chỉ dẫn trong prompt không phải cơ chế ép buộc." }
+    ],
+    "answer": 2,
+    "keyword": "cấm tool → `disallowed_tools`",
+    "relearn": "cca/domain-1/02-kiem-soat-vong-lap#ba-cách-kiểm-soát-tool",
+    "relearnLabel": "1.2 · Ba cách kiểm soát tool"
+  },
+  {
+    "domain": 1,
+    "q": "A developer wants an agent on their own machine to edit project files without prompting for each edit, while other shell commands still follow the normal approval rules. Which permission mode fits?",
+    "options": [
+      { "text": "`bypassPermissions`", "why": "Mode này bỏ qua mọi bước duyệt, kể cả lệnh shell bất kỳ. Nó vượt xa yêu cầu và chỉ nên dùng trong môi trường cô lập." },
+      { "text": "`dontAsk`", "why": "`dontAsk` từ chối mọi lời gọi lẽ ra phải hỏi, nên các lệnh cần duyệt sẽ bị chặn thay vì được hỏi." },
+      { "text": "`default`", "why": "Ở mode mặc định, thao tác sửa file vẫn cần duyệt nếu không có rule cho phép." },
+      { "text": "`acceptEdits`", "why": "`acceptEdits` tự duyệt sửa file và các lệnh file phổ biến trong thư mục làm việc; lệnh Bash khác vẫn theo luật mặc định." }
+    ],
+    "answer": 3,
+    "keyword": "tự duyệt **sửa file** → `acceptEdits`",
+    "relearn": "cca/domain-1/02-kiem-soat-vong-lap#permission-mode",
+    "relearnLabel": "1.2 · Permission mode"
+  },
+  {
+    "domain": 1,
+    "q": "A coordinator's context fills up because a log-analysis step reads dozens of large files. The coordinator only needs the conclusions. What is the best change?",
+    "options": [
+      { "text": "Delegate the log analysis to a subagent that returns a concise summary", "why": "Các lần đọc file ở lại trong context của subagent. Coordinator chỉ nhận báo cáo cuối, nên context của nó không phình ra." },
+      { "text": "Raise `max_turns` so the coordinator has more room", "why": "Thêm turn không tạo thêm chỗ trong context window." },
+      { "text": "Ask the coordinator to read the files faster by using parallel `Read` calls", "why": "Đọc song song nhanh hơn nhưng toàn bộ nội dung vẫn rơi vào context của coordinator." },
+      { "text": "Fork the session before each file is read", "why": "Fork sao chép lịch sử hiện có, không làm giảm lượng nội dung phải giữ." }
+    ],
+    "answer": 0,
+    "keyword": "output trung gian lớn → **subagent**, chỉ nhận tóm tắt",
+    "relearn": "cca/domain-1/03-coordinator-subagent#bốn-lợi-ích-của-subagent",
+    "relearnLabel": "1.3 · Bốn lợi ích của subagent"
+  },
+  {
+    "domain": 1,
+    "q": "A subagent is defined with `tools=[\"Read\", \"Grep\"]`. During a run it needs to create a file. What happens?",
+    "options": [
+      { "text": "The user is prompted to approve a `Write` call", "why": "Không có hộp thoại xin quyền, vì tool `Write` không tồn tại trong phiên của subagent." },
+      { "text": "The `Write` tool is not in the subagent's session at all, so it works without it", "why": "Tool không được liệt kê trong `tools` hoàn toàn vắng mặt. Subagent làm việc mà không có tool đó, không lỗi, không hỏi quyền." },
+      { "text": "The subagent inherits `Write` from the coordinator at runtime", "why": "Kế thừa chỉ xảy ra khi bỏ trống `tools`. Đã liệt kê thì chỉ có đúng các tool đó." },
+      { "text": "The SDK raises a configuration error and stops the query", "why": "Thiếu một tool không phải lỗi cấu hình." }
+    ],
+    "answer": 1,
+    "keyword": "không có trong `tools` = **không tồn tại** với subagent",
+    "relearn": "cca/domain-1/03-coordinator-subagent#agentdefinition",
+    "relearnLabel": "1.3 · AgentDefinition"
+  },
+  {
+    "domain": 1,
+    "q": "A coordinator defines three subagents, but its own configuration auto-approves only `Read`, `Grep`, and `Glob`. In an unattended run, delegation never happens. What is the most likely fix?",
+    "options": [
+      { "text": "Give each subagent a longer system prompt", "why": "System prompt của subagent chỉ có tác dụng sau khi subagent được tạo." },
+      { "text": "Switch every subagent to a larger model", "why": "Model của subagent không ảnh hưởng tới việc coordinator có gọi được tool tạo subagent hay không." },
+      { "text": "Increase the coordinator's `max_turns`", "why": "Số turn không liên quan: lời gọi tạo subagent không được duyệt nên không chạy." },
+      { "text": "Add the subagent-spawning tool (`Agent`, formerly `Task`) to the coordinator's allowed tools", "why": "Coordinator tạo subagent qua tool `Agent` (tên cũ `Task`). Trong lượt chạy không người duyệt, tool này phải được duyệt sẵn thì việc giao việc mới diễn ra." }
+    ],
+    "answer": 3,
+    "keyword": "giao việc cần tool **`Agent`** (tên cũ `Task`) được phép",
+    "relearn": "cca/domain-1/03-coordinator-subagent#agentdefinition",
+    "relearnLabel": "1.3 · AgentDefinition"
+  },
+  {
+    "domain": 1,
+    "q": "A coordinator needs two things: a market analysis and a competitor analysis that do not depend on each other, followed by a recommendation that needs both. Which orchestration is correct?",
+    "options": [
+      { "text": "Run all three subagents in parallel in one response", "why": "Bước khuyến nghị cần kết quả của hai phân tích, nên không thể chạy cùng lúc với chúng." },
+      { "text": "Run all three sequentially, one per turn", "why": "Cách này đúng về phụ thuộc nhưng lãng phí: hai phân tích độc lập có thể chạy cùng lúc." },
+      { "text": "Run the two analyses in parallel in one response, then pass both results into the recommendation subagent's prompt", "why": "Việc độc lập chạy song song; việc có phụ thuộc chạy sau và nhận kết quả của bước trước ngay trong prompt giao việc." },
+      { "text": "Let the recommendation subagent call the two analysis subagents itself", "why": "Lồng subagent làm coordinator mất khả năng quan sát và kiểm soát, và không cần thiết ở đây." }
+    ],
+    "answer": 2,
+    "keyword": "độc lập → song song; phụ thuộc → nối tiếp, **truyền kết quả trong prompt**",
+    "relearn": "cca/domain-1/03-coordinator-subagent#chạy-song-song",
+    "relearnLabel": "1.3 · Chạy song song"
+  },
+  {
+    "domain": 1,
+    "q": "A research system always runs all four subagents, even for a question that a single lookup would answer. Costs are high and answers are slow. What should change?",
+    "options": [
+      { "text": "The coordinator should decide which subagents a request actually needs and skip the rest", "why": "Coordinator chọn subagent theo yêu cầu. Chạy cả dây chuyền cho một câu hỏi tra cứu là lãng phí." },
+      { "text": "All four subagents should switch to the smallest model", "why": "Model nhỏ hơn giảm chi phí mỗi lời gọi nhưng vẫn chạy những bước không cần." },
+      { "text": "The subagents should run in parallel instead of sequentially", "why": "Song song hóa giảm thời gian chờ, không giảm số lời gọi thừa." },
+      { "text": "The coordinator should cache the final report for every question", "why": "Cache chỉ giúp với câu hỏi lặp lại và không sửa quyết định chạy thừa." }
+    ],
+    "answer": 0,
+    "keyword": "coordinator **chọn** subagent theo yêu cầu",
+    "relearn": "cca/domain-1/04-phan-ra-nhiem-vu#coordinator-nên-quyết-định-những-gì",
+    "relearnLabel": "1.4 · Coordinator nên quyết định những gì"
+  },
+  {
+    "domain": 1,
+    "q": "A single-pass review of a 14-file pull request gives detailed feedback on the first files, shallow feedback on the rest, and some contradictory comments. Which restructuring addresses this best?",
+    "options": [
+      { "text": "Use a model with a larger context window for the single pass", "why": "Vấn đề là độ chú ý bị dàn mỏng trong một lượt, không phải thiếu chỗ chứa." },
+      { "text": "Review each file in its own pass, then run a separate integration pass over cross-file concerns", "why": "Mỗi lượt có một mục tiêu rõ: lượt theo file tìm lỗi cục bộ, lượt tích hợp xem luồng giữa các file. Chất lượng đều hơn." },
+      { "text": "Ask the author to split every pull request into single-file changes", "why": "Đẩy việc cho tác giả không sửa quy trình review và làm mất khả năng xem thay đổi liên file." },
+      { "text": "Run the same single-pass review three times and keep the comments that appear in all runs", "why": "Lặp lại cùng một lượt dàn mỏng vẫn cho kết quả dàn mỏng, và bỏ sót lỗi chỉ xuất hiện một lần." }
+    ],
+    "answer": 1,
+    "keyword": "việc lớn → lượt **theo file** + lượt **tích hợp**",
+    "relearn": "cca/domain-1/04-phan-ra-nhiem-vu#tách-việc-lớn-theo-lượt",
+    "relearnLabel": "1.4 · Tách việc lớn theo lượt"
+  },
+  {
+    "domain": 1,
+    "q": "A `PreToolUse` hook denies a refund call and returns only `permissionDecision: \"deny\"`. The agent then retries the same refund several times. What is the best improvement?",
+    "options": [
+      { "text": "Lower `max_turns` so the agent gives up sooner", "why": "Cắt sớm không giúp agent làm đúng việc; nó chỉ dừng trong trạng thái chưa giải quyết." },
+      { "text": "Make the hook asynchronous so it does not slow the agent down", "why": "Hook bất đồng bộ không thể chặn hay tác động tới lời gọi, vì agent đã đi tiếp." },
+      { "text": "Return a `permissionDecisionReason` that explains the rule and names the correct next step, such as escalating to a human", "why": "Lý do được gửi cho model thay cho kết quả tool. Nói rõ quy tắc và bước đúng tiếp theo giúp agent chuyển hướng thay vì thử lại." },
+      { "text": "Remove the hook and state the rule in the system prompt instead", "why": "Bỏ hook là bỏ cơ chế ép buộc xác định, đổi lấy một chỉ dẫn mang tính xác suất." }
+    ],
+    "answer": 2,
+    "keyword": "`permissionDecisionReason` → nói **bước đúng tiếp theo**",
+    "relearn": "cca/domain-1/05-hooks#pretooluse-chặn-và-sửa-lời-gọi",
+    "relearnLabel": "1.5 · PreToolUse: chặn và sửa lời gọi"
+  },
+  {
+    "domain": 1,
+    "q": "A security hook callback occasionally throws an exception because of a network timeout. The team discovers that tool calls go through whenever that happens. What explains this, and what is the fix?",
+    "options": [
+      { "text": "By default a failing callback lets the action proceed; set the matcher's failure behavior to block", "why": "Mặc định, callback ném lỗi thì hành động vẫn tiếp tục. Với hook bảo vệ, đặt `on_failure=\"block\"` trên matcher để lỗi của hook cũng chặn lời gọi." },
+      { "text": "Hooks only run on the first tool call of a session; register the hook again every turn", "why": "Hook chạy cho mọi sự kiện khớp trong suốt phiên." },
+      { "text": "Exceptions are treated as `allow` decisions on purpose and cannot be changed", "why": "Hành vi khi callback lỗi cấu hình được qua tùy chọn trên matcher." },
+      { "text": "The matcher is too broad; narrow it so the hook runs less often", "why": "Thu hẹp matcher không thay đổi việc gì xảy ra khi callback lỗi." }
+    ],
+    "answer": 0,
+    "keyword": "hook bảo vệ bị lỗi → mặc định **cho qua**; đặt `on_failure=\"block\"`",
+    "relearn": "cca/domain-1/05-hooks#nhiều-hook-cùng-khớp",
+    "relearnLabel": "1.5 · Nhiều hook cùng khớp"
+  },
+  {
+    "domain": 1,
+    "q": "An agent escalates a billing dispute to a human specialist who cannot see the conversation. Which handoff is most useful?",
+    "options": [
+      { "text": "A link to the full transcript", "why": "Đề bài nói người nhận không xem được hội thoại, và một transcript dài cũng buộc họ tự tìm lại thông tin." },
+      { "text": "'Customer is upset about a charge. Please help.'", "why": "Bản này thiếu danh tính khách, số tiền, những gì đã kiểm tra và đề xuất, nên nhân viên phải hỏi lại từ đầu." },
+      { "text": "The customer's last message, copied verbatim", "why": "Tin nhắn cuối không chứa những gì agent đã xác minh và đã thử." },
+      { "text": "A structured summary: verified customer ID, the disputed charge and amount, what was checked and tried, and the recommended action", "why": "Người nhận không đọc được hội thoại, nên bản chuyển giao phải tự đủ: ai, vấn đề gì, đã làm gì, đề xuất gì." }
+    ],
+    "answer": 3,
+    "keyword": "người nhận **không thấy hội thoại** → bản chuyển giao tự đủ",
+    "relearn": "cca/domain-1/05-hooks#chuyển-giao-cho-con-người",
+    "relearnLabel": "1.5 · Chuyển giao cho con người"
+  },
+  {
+    "domain": 1,
+    "q": "After a long session, automatic compaction runs. Afterwards the agent stops following a formatting rule that was stated only in the very first prompt. What is the most reliable fix?",
+    "options": [
+      { "text": "Repeat the rule in every user message", "why": "Cách này phụ thuộc vào việc người dùng luôn nhớ lặp lại, và vẫn có thể bị nén mất." },
+      { "text": "Put the rule in CLAUDE.md, which is re-injected on every request", "why": "Nén thay lịch sử cũ bằng bản tóm tắt nên chỉ dẫn ban đầu có thể mất. Nội dung CLAUDE.md được đưa lại vào mọi request." },
+      { "text": "Disable hooks so compaction preserves more of the history", "why": "Hook không quyết định nội dung nào được giữ lại khi nén." },
+      { "text": "Fork the session whenever the context is nearly full", "why": "Fork sao chép cùng một lịch sử, kể cả khi nó sắp bị nén." }
+    ],
+    "answer": 1,
+    "keyword": "quy tắc lâu dài → **CLAUDE.md**, không để trong prompt đầu",
+    "relearn": "cca/domain-1/06-session#session-và-nén-hội-thoại",
+    "relearnLabel": "1.6 · Session và nén hội thoại"
+  }
+]

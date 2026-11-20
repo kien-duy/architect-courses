@@ -1,0 +1,236 @@
+[
+  {
+    "domain": 5,
+    "q": "A long-running agent built with the Agent SDK is given its task objective and acceptance criteria in the first prompt. After automatic compaction, it keeps working but no longer checks its output against the acceptance criteria. Which change addresses this most directly?",
+    "options": [
+      {
+        "text": "Set a higher `max_turns` so the agent finishes before compaction happens",
+        "why": "`max_turns` giới hạn số turn, không giới hạn lượng context. Việc dài vẫn sẽ chạm ngưỡng nén."
+      },
+      {
+        "text": "Have the agent restate the acceptance criteria in every response",
+        "why": "Các phản hồi cũ cũng nằm trong phần lịch sử bị tóm tắt. Cách này tốn token mà không bảo đảm gì."
+      },
+      {
+        "text": "Put the persistent criteria in CLAUDE.md and add a section there telling the compactor what to preserve when summarizing",
+        "why": "CLAUDE.md được đưa lại vào context sau khi nén, và bộ nén đọc hướng dẫn tóm tắt trong đó. Chỉ dẫn chỉ có trong prompt đầu tiên thì có thể mất."
+      },
+      {
+        "text": "Switch the agent to a model with a smaller context window so compaction is more predictable",
+        "why": "Context nhỏ hơn làm nén xảy ra sớm và thường xuyên hơn, tức là mất chi tiết nhiều hơn."
+      }
+    ],
+    "answer": 2,
+    "keyword": "tiêu chí lâu dài → **CLAUDE.md** + hướng dẫn tóm tắt",
+    "relearn": "cca/domain-5/01-giu-thong-tin-hoi-thoai-dai#compaction-giữ-gì-và-mất-gì",
+    "relearnLabel": "5.1 · Compaction giữ gì và mất gì"
+  },
+  {
+    "domain": 5,
+    "q": "An application sends Claude three long contracts (about 60,000 tokens in total) to answer one question about termination clauses. The prompt starts with the question, followed by the three contracts pasted one after another with no separators. Answers often miss relevant clauses. Which restructuring is most likely to help?",
+    "options": [
+      {
+        "text": "Place the contracts first, each wrapped in its own tagged section with its source name, and put the question at the end",
+        "why": "Với input dài, đặt tài liệu ở đầu và câu hỏi ở cuối cho kết quả tốt hơn. Thẻ và tên nguồn cho từng tài liệu là mốc để model định vị nội dung."
+      },
+      {
+        "text": "Repeat the question three times at the top for emphasis",
+        "why": "Lặp lại không thay đổi việc câu hỏi nằm cách xa nội dung liên quan và các tài liệu không có ranh giới."
+      },
+      {
+        "text": "Send only the first contract, since it is the most likely to contain the answer",
+        "why": "Điều khoản cần tìm có thể nằm ở hai hợp đồng còn lại. Đây là bỏ dữ liệu, không phải sắp xếp dữ liệu."
+      },
+      {
+        "text": "Increase `max_tokens` so the model can write a longer answer",
+        "why": "Độ dài output không phải vấn đề. Model bỏ sót nội dung ở phía input."
+      }
+    ],
+    "answer": 0,
+    "keyword": "tài liệu dài **ở đầu**, câu hỏi **ở cuối**, mỗi tài liệu có ranh giới",
+    "relearn": "cca/domain-5/01-giu-thong-tin-hoi-thoai-dai#sắp-xếp-input-theo-vị-trí",
+    "relearnLabel": "5.1 · Sắp xếp input theo vị trí"
+  },
+  {
+    "domain": 5,
+    "q": "A support agent's system prompt says: 'Escalate to a human when appropriate.' In production it escalates simple password resets while trying to resolve requests that no policy covers. The team proposes several fixes. Which should be tried first?",
+    "options": [
+      {
+        "text": "Train a separate classifier on past tickets to decide when to escalate",
+        "why": "Bộ phân loại cần dữ liệu gán nhãn và hạ tầng riêng. Đó là bước quá lớn khi tiêu chí trong prompt còn chưa được viết rõ."
+      },
+      {
+        "text": "Route conversations by the customer's sentiment score",
+        "why": "Cảm xúc không tương quan với việc ca có nằm trong tầm của agent hay không."
+      },
+      {
+        "text": "Have the model rate its own confidence and escalate below a threshold",
+        "why": "Điểm tự chấm không được hiệu chỉnh. Model có thể rất tự tin khi tự diễn giải một policy không tồn tại."
+      },
+      {
+        "text": "Replace the vague instruction with explicit escalation criteria and a few examples that target the borderline cases",
+        "why": "'Khi phù hợp' để model tự diễn giải. Tiêu chí tường minh kèm ví dụ few-shot ở đúng ranh giới dễ nhầm là cách sửa đầu tiên, rẻ nhất và trực tiếp nhất."
+      }
+    ],
+    "answer": 3,
+    "keyword": "**tiêu chí tường minh + few-shot** trước mọi hạ tầng phức tạp",
+    "relearn": "cca/domain-5/02-escalation-va-yeu-cau-mo-ho#tiêu-chí-rõ-ràng-và-ví-dụ-few-shot",
+    "relearnLabel": "5.2 · Tiêu chí rõ ràng và ví dụ few-shot"
+  },
+  {
+    "domain": 5,
+    "q": "When an AI agent escalates a case, human agents receive the note 'Customer needs help with a refund.' They do not have access to the chat transcript, and they routinely re-ask customers for the order number and what has already been tried. What should the handoff contain instead?",
+    "options": [
+      {
+        "text": "A link to the full transcript so the human can read everything",
+        "why": "Đề bài nói nhân viên không truy cập được transcript. Và kể cả khi có, đọc lại toàn bộ hội thoại chậm hơn nhiều so với một bản tóm tắt có cấu trúc."
+      },
+      {
+        "text": "A structured, self-contained summary: verified customer and order IDs, the issue, actions already taken, the reason for escalation and a recommended next step",
+        "why": "Người nhận chỉ có bản chuyển giao. Nó phải tự đủ để họ hành động ngay mà không hỏi lại khách điều agent đã biết."
+      },
+      {
+        "text": "The agent's confidence score for the case",
+        "why": "Điểm tin cậy không cho nhân viên biết khách là ai, vấn đề gì, hay đã thử gì."
+      },
+      {
+        "text": "The customer's sentiment trend over the conversation",
+        "why": "Biết khách bực tới đâu không thay được dữ kiện của ca."
+      }
+    ],
+    "answer": 1,
+    "keyword": "bản chuyển giao **tự đủ**: định danh, vấn đề, đã làm gì, lý do, đề xuất",
+    "relearn": "cca/domain-5/02-escalation-va-yeu-cau-mo-ho#bản-chuyển-giao-tự-đủ",
+    "relearnLabel": "5.2 · Bản chuyển giao tự đủ"
+  },
+  {
+    "domain": 5,
+    "q": "A document-analysis subagent is asked to analyze six files. Two `Read` calls fail inside the subagent. Its final message summarizes four files and does not mention the failures. The coordinator's report claims all six were analyzed. A developer says the coordinator should have noticed the failed tool calls. Why didn't it, and what is the fix?",
+    "options": [
+      {
+        "text": "The coordinator receives only the subagent's final message, not its tool calls; the subagent's instructions must require it to report failures and their coverage impact explicitly",
+        "why": "Các bước trung gian ở lại trong context của subagent. Lỗi nào không được nêu trong message cuối thì với coordinator chưa từng xảy ra, nên định dạng báo lỗi phải nằm trong chỉ dẫn của subagent."
+      },
+      {
+        "text": "The coordinator's context was full; increasing the context window would let it see the subagent's tool calls",
+        "why": "Coordinator không nhận các lời gọi tool của subagent, dù context còn bao nhiêu chỗ."
+      },
+      {
+        "text": "The `Read` tool does not report errors; a custom file tool is needed",
+        "why": "Đề bài nói hai lời gọi `Read` thất bại, tức là lỗi đã được báo cho subagent. Subagent là nơi lỗi bị bỏ rơi."
+      },
+      {
+        "text": "The coordinator should re-read all six files itself to verify every subagent report",
+        "why": "Làm vậy xóa bỏ lợi ích của việc giao việc và đổ sáu file vào context của coordinator."
+      }
+    ],
+    "answer": 0,
+    "keyword": "coordinator chỉ thấy **message cuối** → lỗi phải được nêu trong đó",
+    "relearn": "cca/domain-5/03-lan-truyen-loi#hai-anti-pattern-đối-xứng",
+    "relearnLabel": "5.3 · Hai anti-pattern đối xứng"
+  },
+  {
+    "domain": 5,
+    "q": "A developer is halfway through tracing a bug in Claude Code. The context is dominated by verbose test logs, and the key discoveries so far exist only in the conversation. They will keep working on the same bug. What is the best sequence of actions?",
+    "options": [
+      {
+        "text": "Run `/clear` and continue; the agent will rediscover what it needs",
+        "why": "`/clear` xóa hội thoại, kể cả các phát hiện chưa được ghi ở đâu khác. Nó dành cho lúc chuyển sang việc không liên quan."
+      },
+      {
+        "text": "Keep going without changes; compaction will handle it automatically when needed",
+        "why": "Nén tự động sẽ tự đoán thứ gì quan trọng. Chi tiết cụ thể của các phát hiện có thể không qua được bản tóm tắt."
+      },
+      {
+        "text": "Have the agent write the key findings to a scratchpad file, then run `/compact` with a focus on the bug",
+        "why": "Ghi ra file trước để phát hiện không phụ thuộc vào bản tóm tắt, rồi compact kèm trọng tâm để bỏ phần log thừa mà vẫn tiếp tục cùng việc."
+      },
+      {
+        "text": "Run `/compact` first, then ask the agent to write down what it remembers",
+        "why": "Thứ tự ngược: sau khi nén, thứ agent 'nhớ' chỉ còn là bản tóm tắt. Chi tiết đã mất thì không ghi lại được."
+      }
+    ],
+    "answer": 2,
+    "keyword": "**scratchpad trước**, `/compact` kèm trọng tâm sau",
+    "relearn": "cca/domain-5/04-khao-sat-codebase-lon#dùng-compact-và-clear-đúng-lúc",
+    "relearnLabel": "5.4 · Dùng compact và clear đúng lúc"
+  },
+  {
+    "domain": 5,
+    "q": "An extraction pipeline has been validated on invoices and typed contracts and runs without human review for those types. A new document type, customs declarations, starts arriving. The model extracts their fields with confidence scores above 0.95. How should the pipeline treat customs declarations?",
+    "options": [
+      {
+        "text": "Process them automatically, since the confidence scores exceed the existing threshold",
+        "why": "Ngưỡng hiện tại được hiệu chỉnh trên hai loại tài liệu khác. Điểm 0,95 trên một loại chưa từng đo không nói lên tỉ lệ đúng thực tế."
+      },
+      {
+        "text": "Send them to human review until accuracy for this document type has been measured on labeled examples",
+        "why": "Tự động hóa cần độ chính xác đã được xác nhận theo từng loại tài liệu. Loại mới chưa có số đo thì đi qua người duyệt, đồng thời tạo ra dữ liệu gán nhãn để hiệu chỉnh."
+      },
+      {
+        "text": "Process them automatically because the pipeline's overall accuracy is 97%",
+        "why": "Con số tổng được tính trên các loại cũ. Nó không nói gì về một loại tài liệu mới."
+      },
+      {
+        "text": "Reject them until the model is retrained",
+        "why": "Model có thể đang trích đúng. Thứ còn thiếu là phép đo, và từ chối toàn bộ làm ngừng nghiệp vụ không cần thiết."
+      }
+    ],
+    "answer": 1,
+    "keyword": "loại tài liệu **chưa đo** → người duyệt cho tới khi đo được",
+    "relearn": "cca/domain-5/05-giam-sat-va-do-tin-cay#đo-theo-từng-loại-tài-liệu-và-từng-trường",
+    "relearnLabel": "5.5 · Đo theo từng loại tài liệu và từng trường"
+  },
+  {
+    "domain": 5,
+    "q": "A synthesis agent formats every report as nested bullet points. Readers find it hard to compare quarterly revenue across regions, and the explanation of why a regulation changed reads as disconnected fragments. What instruction best improves the output?",
+    "options": [
+      {
+        "text": "Convert the whole report to continuous prose",
+        "why": "Văn xuôi hợp với phần giải thích nhưng làm số liệu doanh thu theo vùng còn khó so sánh hơn."
+      },
+      {
+        "text": "Convert the whole report to tables",
+        "why": "Bảng hợp với số liệu nhưng không chứa được lập luận nhân quả của phần phân tích."
+      },
+      {
+        "text": "Shorten the report so there is less to format",
+        "why": "Ngắn hơn không sửa được việc định dạng không khớp với loại nội dung."
+      },
+      {
+        "text": "Render each kind of content in the form that suits it: financial figures as tables, analysis as prose, technical findings as structured lists",
+        "why": "Mỗi loại nội dung có dạng trình bày giữ được cấu trúc của nó. Ép mọi thứ vào một định dạng làm mất hoặc số liệu, hoặc lập luận."
+      }
+    ],
+    "answer": 3,
+    "keyword": "trình bày **theo loại nội dung**",
+    "relearn": "cca/domain-5/06-nguon-goc-du-lieu#trình-bày-theo-loại-nội-dung",
+    "relearnLabel": "5.6 · Trình bày theo loại nội dung"
+  },
+  {
+    "domain": 5,
+    "q": "An audit of a research agent's reports finds several statistics that cannot be located anywhere in the documents they cite. The team wants every claim to be checkable against its source. Which requirement on the analysis subagents best achieves this?",
+    "options": [
+      {
+        "text": "Return a confidence score with each statistic",
+        "why": "Điểm tin cậy không cho người kiểm tra biết phải tìm con số ở đâu trong tài liệu."
+      },
+      {
+        "text": "Return the document title next to each statistic",
+        "why": "Tên tài liệu thu hẹp nơi tìm, nhưng không chứng minh được con số thật sự có trong đó. Đây chính là tình trạng hiện tại."
+      },
+      {
+        "text": "Return each claim with a verbatim supporting quote and its location in the source, and drop any claim for which no supporting quote can be found",
+        "why": "Câu trích nguyên văn kiểm chứng được bằng cách tìm trong nguồn. Nhận định không có câu trích hỗ trợ bị rút lại thay vì đi tiếp vào báo cáo."
+      },
+      {
+        "text": "Return longer summaries so more context surrounds each statistic",
+        "why": "Tóm tắt dài hơn vẫn là lời của model, không phải bằng chứng từ nguồn."
+      }
+    ],
+    "answer": 2,
+    "keyword": "mỗi nhận định kèm **câu trích nguyên văn**; không có thì rút lại",
+    "relearn": "cca/domain-5/06-nguon-goc-du-lieu#ánh-xạ-nhận-định-sang-nguồn",
+    "relearnLabel": "5.6 · Ánh xạ nhận định sang nguồn"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "document_type": "informal_request",
+  "document_type_detail": "Yêu cầu thanh toán chi phí dịch vụ từ hộ kinh doanh (không phải hóa đơn chính thức)",
+  "vendor_name": "Điện lạnh Phú Quý",
+  "vendor_tax_code": null,
+  "invoice_number": null,
+  "issue_date": "2026-11-07",
+  "due_date": null,
+  "line_items": [
+    {
+      "description": "Vệ sinh 4 máy lạnh",
+      "quantity": 4,
+      "unit_price": 250000,
+      "amount": 1000000
+    },
+    {
+      "description": "Nạp gas máy lạnh",
+      "quantity": 1,
+      "unit_price": 400000,
+      "amount": 400000
+    }
+  ],
+  "stated_subtotal": null,
+  "vat_amount": null,
+  "stated_total": 1400000,
+  "calculated_total": 1400000
+}

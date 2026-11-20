@@ -1,0 +1,15 @@
+CÔNG TY TNHH VĂN PHÒNG PHẨM SAO MAI
+Mã số thuế: 0312345678
+
+HÓA ĐƠN BÁN HÀNG                    Số: HD-2026-0117
+Ngày lập: 03/11/2026                Hạn thanh toán: 18/11/2026
+Khách hàng: Công ty CP Phần mềm Bình Minh
+
+STT  Mặt hàng                  SL   Đơn giá     Thành tiền
+1    Giấy A4 Double A (ram)    20    85.000      1.700.000
+2    Bút bi Thiên Long (hộp)    5    60.000        300.000
+3    Mực in HP 107A             2   950.000      1.900.000
+
+Cộng tiền hàng:        3.900.000
+Thuế GTGT (8%):          312.000
+Tổng thanh toán:       4.212.000

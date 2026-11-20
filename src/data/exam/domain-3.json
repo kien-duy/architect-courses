@@ -1,0 +1,314 @@
+[
+  {
+    "domain": 3,
+    "q": "In a monorepo, `packages/api/CLAUDE.md` contains the line `@standards/testing.md`. The shared standards live at the repository root in `standards/testing.md`. Developers who start Claude Code in `packages/api/` find that the testing standards are never applied. What is the cause?",
+    "options": [
+      {
+        "text": "Imports are only processed in the root `CLAUDE.md`",
+        "why": "Import dùng được trong mọi CLAUDE.md, kể cả file của từng package."
+      },
+      {
+        "text": "A relative import path resolves from the file that contains it, so this line points to `packages/api/standards/testing.md`, which does not exist",
+        "why": "Đường dẫn tương đối tính từ file chứa lệnh import, không phải từ gốc repo. Viết `@../../standards/testing.md` thì file được nạp."
+      },
+      {
+        "text": "Imported files must use the `.claude.md` extension",
+        "why": "Không có yêu cầu nào về phần mở rộng. README hay `package.json` cũng import được."
+      },
+      {
+        "text": "The import exceeds the maximum depth of four hops",
+        "why": "Đây mới là một tầng import. Giới hạn bốn tầng chỉ liên quan khi các file import lồng nhau."
+      }
+    ],
+    "answer": 1,
+    "keyword": "`@path` tương đối tính từ **file chứa nó**",
+    "relearn": "cca/domain-3/01-claude-md#import-bằng-path",
+    "relearnLabel": "3.1 · Import bằng @path"
+  },
+  {
+    "domain": 3,
+    "q": "A team's project `CLAUDE.md` states 'Never commit directly to the `main` branch.' Over a month, Claude Code still committed to `main` three times during long sessions. The rule must hold without exception. What should the team change?",
+    "options": [
+      {
+        "text": "Move the sentence to the first line of `CLAUDE.md`",
+        "why": "Vị trí trong file có thể giúp một chút, nhưng nội dung CLAUDE.md vẫn chỉ là context mà model cố làm theo."
+      },
+      {
+        "text": "Repeat the sentence in `~/.claude/CLAUDE.md` on every developer's machine",
+        "why": "Lặp lại ở nhiều nơi vẫn là chỉ dẫn mang tính xác suất, và còn khó bảo trì hơn."
+      },
+      {
+        "text": "Write the sentence in capital letters with 'IMPORTANT'",
+        "why": "Nhấn mạnh làm tăng xác suất tuân thủ nhưng không đưa nó về 100%."
+      },
+      {
+        "text": "Enforce it with a hook that blocks the commit command on `main`, because CLAUDE.md is context rather than enforced configuration",
+        "why": "CLAUDE.md là chỉ dẫn, không phải cơ chế ép buộc. Quy tắc không được có ngoại lệ thì cần hook, thứ chạy xác định ở một thời điểm cố định bất kể model quyết định gì."
+      }
+    ],
+    "answer": 3,
+    "keyword": "quy tắc **không ngoại lệ** → hook, không phải CLAUDE.md",
+    "relearn": "cca/domain-3/01-claude-md#viết-chỉ-dẫn-hiệu-quả",
+    "relearnLabel": "3.1 · Viết chỉ dẫn hiệu quả"
+  },
+  {
+    "domain": 3,
+    "q": "A nightly job runs `claude -p \"Fix all lint errors and commit\" --permission-mode acceptEdits` unattended. One night the run kept editing and re-running the linter for hours and consumed a large amount of usage. Which change most directly prevents a repeat?",
+    "options": [
+      {
+        "text": "Add `--max-turns` (and a spend cap such as `--max-budget-usd`) so the run stops at a defined limit",
+        "why": "Lượt chạy không người trông cần một điểm dừng. `--max-turns` giới hạn số turn của vòng lặp và `--max-budget-usd` giới hạn chi phí ước tính; chạm giới hạn thì lượt chạy kết thúc với lỗi."
+      },
+      {
+        "text": "Add `--output-format json` so the job can read the result",
+        "why": "Định dạng output giúp script đọc kết quả, không giới hạn thời gian hay số vòng lặp."
+      },
+      {
+        "text": "Switch to `--permission-mode plan`",
+        "why": "Plan mode không sửa file, nên job sẽ không còn làm được việc của nó."
+      },
+      {
+        "text": "Put 'Stop after a reasonable number of attempts' in the prompt",
+        "why": "Đây là chỉ dẫn mà model có thể diễn giải tùy ý. Giới hạn bằng cờ thì xác định."
+      }
+    ],
+    "answer": 0,
+    "keyword": "job không người trông → luôn có `--max-turns` / `--max-budget-usd`",
+    "relearn": "cca/domain-3/06-ci-cd#quyền-và-giới-hạn-trong-pipeline",
+    "relearnLabel": "3.6 · Quyền và giới hạn trong pipeline"
+  },
+  {
+    "domain": 3,
+    "q": "A team shares a `/fix-issue` skill that needs a GitHub issue number. New developers often run it with no argument and get a confused response. The team wants the expected parameter to be visible while the command is being typed. Which frontmatter field does this?",
+    "options": [
+      {
+        "text": "`description: \"Requires an issue number\"`",
+        "why": "`description` giúp Claude quyết định khi nào dùng skill. Nó không phải gợi ý tham số hiện lúc gõ lệnh."
+      },
+      {
+        "text": "`allowed-tools: Bash(gh issue view *)`",
+        "why": "Trường này tự duyệt tool cho lượt gọi skill, không liên quan tới việc gợi ý tham số."
+      },
+      {
+        "text": "`argument-hint: \"[issue-number]\"`",
+        "why": "`argument-hint` hiển thị gợi ý về tham số trong lúc tự động hoàn thành lệnh, để người gọi biết skill cần gì."
+      },
+      {
+        "text": "`user-invocable: false`",
+        "why": "Trường này ẩn skill khỏi menu `/`, khiến developer không gọi được nữa."
+      }
+    ],
+    "answer": 2,
+    "keyword": "gợi ý tham số khi gõ lệnh → `argument-hint`",
+    "relearn": "cca/domain-3/02-skill-va-slash-command#frontmatter-của-skillmd",
+    "relearnLabel": "3.2 · Frontmatter của SKILL.md"
+  },
+  {
+    "domain": 3,
+    "q": "A team maintains a skill, `legacy-billing-context`, that explains how a fifteen-year-old billing system behaves. Claude should load it whenever a task touches that system, but it is not an action anyone would run, and the team does not want it cluttering the `/` menu. Which setting fits?",
+    "options": [
+      {
+        "text": "`disable-model-invocation: true`",
+        "why": "Ngược với yêu cầu: Claude sẽ không tự nạp được skill, và skill vẫn hiện trong menu `/`."
+      },
+      {
+        "text": "`context: fork`",
+        "why": "Chạy trong subagent không ẩn skill khỏi menu, và kiến thức nền không có việc cụ thể thì subagent không có gì để làm."
+      },
+      {
+        "text": "Move the content into `~/.claude/CLAUDE.md`",
+        "why": "Làm vậy nạp nội dung vào mọi phiên của một người, ở mọi dự án, và cả đội không nhận được."
+      },
+      {
+        "text": "`user-invocable: false`",
+        "why": "Skill bị ẩn khỏi menu `/` và không chạy khi gõ tên, nhưng `description` vẫn nằm trong context để Claude tự nạp khi liên quan. Đây là lựa chọn cho kiến thức nền."
+      }
+    ],
+    "answer": 3,
+    "keyword": "kiến thức nền, chỉ Claude dùng → `user-invocable: false`",
+    "relearn": "cca/domain-3/02-skill-va-slash-command#ai-được-gọi-skill",
+    "relearnLabel": "3.2 · Ai được gọi skill"
+  },
+  {
+    "domain": 3,
+    "q": "A skill body reads 'Migrate the `$1` component from `$2` to `$3`.' A developer runs `/migrate-component SearchBar React Vue` and Claude tries to migrate a component called 'React' from 'Vue'. What is wrong?",
+    "options": [
+      {
+        "text": "Skills cannot take more than one argument",
+        "why": "Skill nhận nhiều tham số theo vị trí."
+      },
+      {
+        "text": "Positional placeholders are zero-based, so the first argument is `$0`; the body should use `$0`, `$1`, `$2`",
+        "why": "`$N` là viết tắt của `$ARGUMENTS[N]` và đếm từ 0. `$1` là tham số thứ hai, còn `$3` không có giá trị nên giữ nguyên dạng chữ."
+      },
+      {
+        "text": "Arguments must be declared in `argument-hint` before they can be used",
+        "why": "`argument-hint` chỉ là gợi ý hiển thị. Nó không khai báo hay kiểm tra tham số."
+      },
+      {
+        "text": "The skill needs `context: fork` to receive arguments",
+        "why": "Tham số được thay vào nội dung skill dù skill chạy trong phiên chính hay trong subagent."
+      }
+    ],
+    "answer": 1,
+    "keyword": "tham số vị trí đếm từ **0**: `$0`, `$1`, `$2`",
+    "relearn": "cca/domain-3/02-skill-va-slash-command#tham-số-và-arguments",
+    "relearnLabel": "3.2 · Tham số và ARGUMENTS"
+  },
+  {
+    "domain": 3,
+    "q": "A TypeScript team wants one set of conventions to load only when Claude works on source files under `src/` (both `.ts` and `.tsx`) or on test files under `tests/`. Which setup achieves this with the least maintenance?",
+    "options": [
+      {
+        "text": "A `CLAUDE.md` in `src/` and another in `tests/`, each containing the conventions",
+        "why": "Hai bản sao phải giữ đồng bộ, và CLAUDE.md thư mục con áp dụng cho mọi file trong thư mục chứ không riêng file TypeScript."
+      },
+      {
+        "text": "One rule file whose frontmatter has `applies-to: src, tests`",
+        "why": "`paths` là trường duy nhất Claude Code đọc trong frontmatter của rule. Trường lạ bị bỏ qua, nên rule sẽ nạp ở mọi phiên."
+      },
+      {
+        "text": "One rule file with `paths` listing `src/**/*.{ts,tsx}` and `tests/**/*.test.ts`",
+        "why": "Một rule nhận nhiều mẫu và hỗ trợ khai triển ngoặc nhọn. Rule được nạp khi file khớp bất kỳ mẫu nào, và chỉ có một file để bảo trì."
+      },
+      {
+        "text": "One rule file with `paths: [\"src/*.ts\"]`",
+        "why": "`*` chỉ khớp một tầng thư mục và mẫu này bỏ sót `.tsx` cùng toàn bộ `tests/`."
+      }
+    ],
+    "answer": 2,
+    "keyword": "một rule, **nhiều mẫu** glob, dùng `{ts,tsx}`",
+    "relearn": "cca/domain-3/03-rule-theo-duong-dan#cú-pháp-glob",
+    "relearnLabel": "3.3 · Cú pháp glob"
+  },
+  {
+    "domain": 3,
+    "q": "An engineer joins a team and is asked to assess how multi-tenancy could be added to an unfamiliar 300-file service. She wants Claude to investigate and propose an approach, and wants to be certain no source file is modified during the investigation. How should she start?",
+    "options": [
+      {
+        "text": "`claude --permission-mode plan`",
+        "why": "Plan mode cho Claude đọc, khảo sát và viết kế hoạch, và không sửa mã nguồn cho tới khi kế hoạch được duyệt. Cũng vào được bằng `Shift+Tab` hoặc `/plan`."
+      },
+      {
+        "text": "`claude --permission-mode acceptEdits`",
+        "why": "Mode này tự duyệt việc sửa file, ngược với điều cô ấy muốn."
+      },
+      {
+        "text": "`claude --permission-mode bypassPermissions`",
+        "why": "Mode này bỏ mọi kiểm tra và chỉ dành cho môi trường cô lập."
+      },
+      {
+        "text": "`claude -p \"Add multi-tenancy\"`",
+        "why": "Lệnh này yêu cầu thực hiện thay đổi trong một lượt không tương tác, bỏ qua bước khảo sát và duyệt hướng đi."
+      }
+    ],
+    "answer": 0,
+    "keyword": "khảo sát an toàn trước khi sửa → `--permission-mode plan`",
+    "relearn": "cca/domain-3/04-plan-mode#vào-và-ra-khỏi-plan-mode",
+    "relearnLabel": "3.4 · Vào và ra khỏi plan mode"
+  },
+  {
+    "domain": 3,
+    "q": "A project's `CLAUDE.md` says that everything under `gen/` is generated and must be ignored in analysis. During planning, Claude delegates a codebase survey to the built-in Explore subagent, and the returned summary treats `gen/` files as hand-written code. What is the most likely reason?",
+    "options": [
+      {
+        "text": "Explore cannot read files outside `src/`",
+        "why": "Explore đọc được file trong toàn bộ thư mục làm việc."
+      },
+      {
+        "text": "The summary was truncated before reaching the `gen/` rule",
+        "why": "Bản tóm tắt là output của subagent. Quy ước về `gen/` là input mà nó chưa từng nhận."
+      },
+      {
+        "text": "Explore starts without the project's CLAUDE.md to stay fast, so the delegation prompt must carry any convention the survey depends on",
+        "why": "Explore và Plan khởi động mà không nạp CLAUDE.md. Thứ subagent biết về yêu cầu là prompt giao việc, nên quy ước cần thiết phải nằm trong đó."
+      },
+      {
+        "text": "Subagents always ignore CLAUDE.md",
+        "why": "Không đúng với mọi subagent. Subagent tự định nghĩa và `general-purpose` có nạp CLAUDE.md; ngoại lệ là Explore và Plan."
+      }
+    ],
+    "answer": 2,
+    "keyword": "Explore **không** nạp CLAUDE.md → ghi quy ước cần thiết vào prompt giao việc",
+    "relearn": "cca/domain-3/04-plan-mode#giữ-context-gọn-bằng-subagent-explore",
+    "relearnLabel": "3.4 · Giữ context gọn bằng subagent Explore"
+  },
+  {
+    "domain": 3,
+    "q": "A developer describes a CSV parser's requirements in two paragraphs. Claude implements it and reports that it is done. Over the next week, bugs surface one at a time: quoted commas, empty trailing fields, Windows line endings. Which practice would have caught these earliest?",
+    "options": [
+      {
+        "text": "Write tests first that cover expected behavior and edge cases, confirm they fail, then have Claude iterate until they pass and show the test output",
+        "why": "Test viết trước cho Claude một phép kiểm tra chạy được. Nó tự lặp theo lỗi thay vì dừng khi code trông có vẻ xong, và các trường hợp biên được nêu ra trước khi viết code."
+      },
+      {
+        "text": "Ask Claude to confirm twice that the implementation is complete",
+        "why": "Model xác nhận lại chính mình mà không có gì để chạy thì vẫn chỉ là 'trông có vẻ xong'."
+      },
+      {
+        "text": "Rewrite the two paragraphs with more adjectives such as 'robust' and 'complete'",
+        "why": "Tính từ không định nghĩa hành vi với dấu phẩy trong ngoặc kép hay ký tự xuống dòng kiểu Windows."
+      },
+      {
+        "text": "Use plan mode so that Claude lists the files it will change",
+        "why": "Kế hoạch cho biết sẽ sửa gì, không kiểm tra hành vi của code với đầu vào khó."
+      }
+    ],
+    "answer": 0,
+    "keyword": "test **trước**, có trường hợp biên → Claude lặp theo lỗi, kèm bằng chứng",
+    "relearn": "cca/domain-3/05-tinh-chinh-lap#viết-test-trước-rồi-lặp-theo-lỗi",
+    "relearnLabel": "3.5 · Viết test trước rồi lặp theo lỗi"
+  },
+  {
+    "domain": 3,
+    "q": "A developer has corrected Claude twice in the same session about how a date-range filter should treat its end date. The third result is wrong again, in a new way, and the conversation now contains both failed attempts. What is the recommended next move?",
+    "options": [
+      {
+        "text": "Send a third, longer correction in the same conversation",
+        "why": "Lần sửa thứ ba chủ yếu thêm chữ vào một hội thoại đã chứa hai lần thất bại mà Claude tiếp tục đọc lại."
+      },
+      {
+        "text": "Switch to a larger model and repeat the last correction",
+        "why": "Model khác vẫn nhận cùng hội thoại lộn xộn và cùng yêu cầu chưa rõ."
+      },
+      {
+        "text": "Ask Claude to explain why it keeps getting it wrong",
+        "why": "Lời giải thích không tạo ra định nghĩa rõ về hành vi mong muốn, và làm hội thoại dài thêm."
+      },
+      {
+        "text": "Run `/clear` and write one new prompt that states the rule precisely, for example with input and output examples for the end date",
+        "why": "Sau hai lần sửa hỏng cho cùng một điều, bắt đầu lại với context sạch và một prompt gom những gì đã học được gần như luôn tốt hơn."
+      }
+    ],
+    "answer": 3,
+    "keyword": "hai lần sửa hỏng → `/clear` + prompt mới cụ thể hơn",
+    "relearn": "cca/domain-3/05-tinh-chinh-lap#khi-nào-nên-bắt-đầu-lại",
+    "relearnLabel": "3.5 · Khi nào nên bắt đầu lại"
+  },
+  {
+    "domain": 3,
+    "q": "A CI job asks Claude Code to generate unit tests for changed files. The generated tests duplicate scenarios that already exist, ignore the repository's shared fixtures, and use a different assertion style from the rest of the suite. Which change addresses the root cause?",
+    "options": [
+      {
+        "text": "Run the job with `--bare` so the output is identical on every runner",
+        "why": "`--bare` bỏ qua CLAUDE.md, tức là lấy đi luôn nguồn context về chuẩn test của dự án."
+      },
+      {
+        "text": "Document the testing standards and available fixtures in the project `CLAUDE.md`, and include the existing test files in the context for the generation step",
+        "why": "Claude trong CI chỉ biết điều repo nói cho nó. CLAUDE.md mang chuẩn test và danh sách fixture; file test hiện có cho thấy phong cách và những kịch bản đã được phủ."
+      },
+      {
+        "text": "Add `--json-schema` so each test is returned as a JSON object",
+        "why": "Schema định hình output, không cho Claude biết test nào đã tồn tại hay fixture nào có sẵn."
+      },
+      {
+        "text": "Increase `--max-turns` so Claude can write more tests",
+        "why": "Thêm turn tạo ra nhiều test hơn với cùng những thiếu sót."
+      }
+    ],
+    "answer": 1,
+    "keyword": "sinh test trong CI: chuẩn + fixture trong **CLAUDE.md**, kèm **file test hiện có**",
+    "relearn": "cca/domain-3/06-ci-cd#claudemd-trong-ci",
+    "relearnLabel": "3.6 · CLAUDE.md trong CI"
+  }
+]

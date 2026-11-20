@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "properties": {
+    "document_type": {"type": "string", "enum": ["invoice", "receipt", "informal_request", "other"]},
+    "document_type_detail": {"type": ["string", "null"], "description": "Chỉ điền khi document_type là other"},
+    "vendor_name": {"type": "string"},
+    "vendor_tax_code": {"type": ["string", "null"], "description": "null nếu văn bản không ghi mã số thuế"},
+    "invoice_number": {"type": ["string", "null"], "description": "null nếu văn bản không ghi số hóa đơn"},
+    "issue_date": {"type": ["string", "null"], "description": "YYYY-MM-DD, null nếu không ghi"},
+    "due_date": {"type": ["string", "null"], "description": "YYYY-MM-DD, null nếu không ghi"},
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {"type": "string"},
+          "quantity": {"type": ["number", "null"]},
+          "unit_price": {"type": ["integer", "null"]},
+          "amount": {"type": "integer", "description": "Thành tiền của dòng, số nguyên VND. Chiết khấu là số âm"}
+        },
+        "required": ["description", "quantity", "unit_price", "amount"],
+        "additionalProperties": false
+      }
+    },
+    "stated_subtotal": {"type": ["integer", "null"], "description": "Tiền hàng trước thuế đúng như văn bản ghi"},
+    "vat_amount": {"type": ["integer", "null"], "description": "null nếu văn bản không tính VAT"},
+    "stated_total": {"type": "integer", "description": "Tổng phải trả đúng như văn bản ghi"},
+    "calculated_total": {"type": "integer", "description": "Tự tính: tổng amount của line_items cộng vat_amount. Không chép từ văn bản"}
+  },
+  "required": ["document_type", "document_type_detail", "vendor_name", "vendor_tax_code", "invoice_number", "issue_date", "due_date", "line_items", "stated_subtotal", "vat_amount", "stated_total", "calculated_total"],
+  "additionalProperties": false
+}

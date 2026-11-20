@@ -1,0 +1,33 @@
+{
+  "document_type": "invoice",
+  "document_type_detail": null,
+  "vendor_name": "Nhà sách Hải Âu",
+  "vendor_tax_code": "0109876543",
+  "invoice_number": "PT-889",
+  "issue_date": "2026-11-05",
+  "due_date": "2026-11-20",
+  "line_items": [
+    {
+      "description": "Sổ tay bìa da",
+      "quantity": 30,
+      "unit_price": 45000,
+      "amount": 1350000
+    },
+    {
+      "description": "Bộ bút dạ quang",
+      "quantity": 12,
+      "unit_price": 72000,
+      "amount": 864000
+    },
+    {
+      "description": "Chiết khấu khách hàng thân thiết",
+      "quantity": null,
+      "unit_price": null,
+      "amount": -214000
+    }
+  ],
+  "stated_subtotal": 2000000,
+  "vat_amount": 160000,
+  "stated_total": 2160000,
+  "calculated_total": 2160000
+}

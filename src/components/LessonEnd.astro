@@ -1,0 +1,119 @@
+---
+// Cuối mỗi bài: flashcard (nếu có), quiz (đúng hết mới tích hoàn thành), rồi đánh giá sao + comment.
+interface Props {
+	kind: 'lesson' | 'lab' | 'quiz' | 'exam';
+	quiz: {
+		q: string;
+		code?: string;
+		options: { text: string; why?: string }[];
+	}[];
+	/** Số flashcard của bài; thẻ được dựng ở phía trình duyệt. */
+	cards?: number;
+	/** Bài có nằm trong checklist hay không. */
+	tracked?: boolean;
+}
+const { kind, quiz, cards = 0, tracked = true } = Astro.props;
+const isModule = kind === 'quiz';
+const LETTERS = 'ABCDEFGH';
+
+const esc = (s: string) =>
+	s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const inline = (s: string) =>
+	esc(s)
+		.replace(/`([^`]+)`/g, '<code>$1</code>')
+		.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+---
+
+{
+	cards > 0 && (
+		<section class="ccf-cards not-content" aria-labelledby="ccf-cards-title">
+			<h2 id="ccf-cards-title">Flashcard</h2>
+			<p class="ccf-quiz-rule">{cards} thẻ ôn nhanh. Bấm vào thẻ để lật, dùng phím ← → để chuyển thẻ.</p>
+			<button type="button" class="ccf-card" aria-live="polite">
+				<span class="ccf-card-side">Câu hỏi</span>
+				<span class="ccf-card-text" />
+			</button>
+			<div class="ccf-quiz-actions">
+				<button type="button" class="ccf-btn ccf-card-prev">← Thẻ trước</button>
+				<button type="button" class="ccf-btn ccf-btn-primary ccf-card-next">Thẻ sau →</button>
+				<button type="button" class="ccf-btn ccf-card-shuffle">Xáo thẻ</button>
+				<span class="ccf-result ccf-card-count" />
+			</div>
+		</section>
+	)
+}
+
+{
+	tracked && quiz.length === 0 && kind === 'lesson' && (
+		<section class="ccf-quiz ccf-manual not-content" aria-labelledby="ccf-manual-title">
+			<h2 id="ccf-manual-title">Hoàn thành bài</h2>
+			<p class="ccf-quiz-rule">Bài này không có câu hỏi kiểm tra. Đánh dấu khi bạn đã đọc xong.</p>
+			<p class="ccf-quiz-status" hidden />
+			<div class="ccf-quiz-actions">
+				<button type="button" class="ccf-btn ccf-btn-primary ccf-manual-done">Đánh dấu đã đọc xong</button>
+			</div>
+		</section>
+	)
+}
+
+{
+	quiz.length > 0 && (
+		<section class="ccf-quiz not-content" aria-labelledby="ccf-quiz-title">
+			<h2 id="ccf-quiz-title">{isModule ? 'Bài kiểm tra' : kind === 'lab' ? 'Kiểm tra sau lab' : 'Kiểm tra cuối bài'}</h2>
+			<p class="ccf-quiz-rule">
+				{isModule
+					? `${quiz.length} câu. Đạt từ 70% để tích hoàn thành. Lời giải hiện sau khi nộp.`
+					: `Trả lời đúng cả ${quiz.length} câu trong một lượt để tích hoàn thành bài. Sai thì xem gợi ý, học lại rồi làm lại.`}
+			</p>
+			<p class="ccf-quiz-status" hidden />
+			<ol class="ccf-questions">
+				{quiz.map((q, i) => (
+					<li class="ccf-q">
+						<p class="ccf-q-text" set:html={inline(q.q)} />
+						{q.code && (
+							<pre class="ccf-q-code"><code>{q.code}</code></pre>
+						)}
+						<div class="ccf-options" role="radiogroup" aria-label={`Câu ${i + 1}`}>
+							{q.options.map((o, j) => (
+								<label class="ccf-opt">
+									<input type="radio" name={`ccf-q${i}`} value={j} />
+									<span class="ccf-letter">{LETTERS[j]}</span>
+									<span class="ccf-opt-text" set:html={inline(o.text)} />
+								</label>
+							))}
+						</div>
+						<div class="ccf-feedback" hidden aria-live="polite" />
+					</li>
+				))}
+			</ol>
+			<div class="ccf-quiz-actions">
+				<button type="button" class="ccf-btn ccf-btn-primary ccf-submit">Nộp bài</button>
+				<button type="button" class="ccf-btn ccf-retry" hidden>Làm lại</button>
+				<span class="ccf-result" aria-live="polite" />
+			</div>
+		</section>
+	)
+}
+
+{tracked && (
+<section class="ccf-rating not-content" aria-labelledby="ccf-rating-title">
+	<h2 id="ccf-rating-title">Đánh giá bài học</h2>
+	<div class="ccf-stars" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
+		{[1, 2, 3, 4, 5].map((n) => (
+			<button type="button" class="ccf-star" role="radio" aria-checked="false" aria-label={`${n} sao`}>★</button>
+		))}
+		<span class="ccf-star-label">Chưa đánh giá</span>
+	</div>
+	<label class="ccf-note-label" for="ccf-comment">Bài này nên cải thiện điều gì?</label>
+	<textarea
+		id="ccf-comment"
+		class="ccf-textarea"
+		rows="4"
+		placeholder="Chỗ khó hiểu, ví dụ còn thiếu, lỗi sai, ý muốn bổ sung…"
+	></textarea>
+	<p class="ccf-rating-foot">
+		<span class="ccf-muted">Chỉ lưu trên trình duyệt này và nằm trong file “Lưu tiến trình học”.</span>
+		<span class="ccf-saved" aria-live="polite"></span>
+	</p>
+</section>
+)}

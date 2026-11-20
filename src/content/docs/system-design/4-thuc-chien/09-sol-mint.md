@@ -1,0 +1,483 @@
+---
+title: "Thiết kế Mint.com"
+description: "Lấy giao dịch từ tài khoản ngân hàng bằng các job bất đồng bộ qua queue."
+lesson:
+  group: "Thiết kế thực chiến"
+  minutes: 25
+quiz:
+  - q: "Vì sao việc kéo giao dịch từ ngân hàng nên chạy bất đồng bộ?"
+    options: ["Vì ngân hàng yêu cầu", "Vì việc này chậm và không cần chặn request của người dùng", "Vì SQL không hỗ trợ đồng bộ", "Vì cần tiết kiệm RAM"]
+    answer: 1
+    why: "Việc chậm nên đưa vào queue để worker xử lý dần."
+cards:
+  - q: "Mint.com: các use case chính được scope?"
+    a: "User kết nối tài khoản tài chính; service trích xuất giao dịch hằng ngày, phân loại (user có thể sửa tay, không tự phân loại lại), phân tích chi tiêu tháng theo danh mục; gợi ý ngân sách và báo khi sắp/vượt ngân sách; high availability."
+  - q: "Những giả định giúp giảm tải cho Mint?"
+    a: "Chỉ tự động cập nhật hằng ngày cho user hoạt động trong 30 ngày qua; thêm/xóa tài khoản tài chính khá hiếm; thông báo ngân sách không cần tức thì."
+  - q: "Vì sao Mint là hệ thống write-heavy, tỷ lệ bao nhiêu?"
+    a: "Tỷ lệ ghi:đọc 10:1, vì user phát sinh giao dịch hằng ngày nhưng ít người vào site mỗi ngày. 5 tỷ giao dịch và 500 triệu lượt đọc mỗi tháng."
+  - q: "Ước lượng dung lượng và throughput của Mint?"
+    a: "Khoảng 50 byte mỗi giao dịch → 250 GB mỗi tháng, 9 TB sau 3 năm; trung bình 2.000 giao dịch/giây và 200 read/giây."
+  - q: "Những trường hợp nào kích hoạt trích xuất giao dịch từ tài khoản?"
+    a: "Khi user liên kết tài khoản lần đầu, khi user refresh thủ công, và tự động mỗi ngày cho user hoạt động trong 30 ngày qua."
+  - q: "Transaction Extraction Service làm gì sau khi lấy job từ queue?"
+    a: "Kéo giao dịch từ tổ chức tài chính, lưu log thô vào Object Store; dùng Category Service phân loại, Budget Service tổng hợp chi tiêu tháng; cập nhật bảng `transactions`, `monthly_spending`; báo user qua Notification Service."
+  - q: "Category Service phân loại giao dịch theo cách nào?"
+    a: "Seed một dictionary seller → category với các seller phổ biến (50.000 seller, khoảng 12 MB bộ nhớ). Seller chưa có thì crowdsource từ các lần user sửa tay, dùng heap để lấy override hàng đầu mỗi seller."
+  - q: "Làm sao tránh lưu 100 triệu budget item?"
+    a: "Dùng budget template chung chia tiền cho từng danh mục theo mức thu nhập; chỉ lưu những danh mục user tự override (bảng `budget_overrides`)."
+  - q: "Hai cách tạo bảng `monthly_spending` và lợi ích của cách thứ hai?"
+    a: "Chạy SQL query trên bảng `transactions`, hoặc chạy MapReduce trên file giao dịch thô để phân loại và tổng hợp theo (user, tháng, danh mục). MapReduce giảm đáng kể tải cho database; có thể chạy lại khi user đổi danh mục."
+  - q: "Điểm nghẽn khi scale Mint và cách xử lý?"
+    a: "Đọc: cache session, thống kê tổng hợp, giao dịch gần đây trong Memory Cache; read replica lo cache miss. Ghi: 2.000 write/giây có thể quá sức một SQL Write Master-Slave → federation, sharding, denormalization, SQL tuning, NoSQL; chỉ giữ một tháng `transactions` trong DB."
+---
+
+:::tip[Ý chính]
+- Lấy giao dịch từ tài khoản ngân hàng bằng các job bất đồng bộ qua queue.
+- Phân loại giao dịch theo nhà cung cấp, tổng hợp ngân sách theo tháng.
+- Ghi nhiều, đọc ít hơn: cân nhắc NoSQL cho log giao dịch và tổng hợp dữ liệu trước.
+:::
+
+*Phần nội dung tiếng Anh dưới đây lấy từ [The System Design Primer](https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/mint/README.md) của Donne Martin, giấy phép CC BY 4.0. Tiêu đề, ý chính, câu hỏi và flashcard là phần tiếng Việt của khóa học.*
+
+## Design Mint.com
+
+*Note: This document links directly to relevant areas found in the [system design topics](../../) to avoid duplication.  Refer to the linked content for general talking points, tradeoffs, and alternatives.*
+
+### Step 1: Outline use cases and constraints
+
+> Gather requirements and scope the problem.
+> Ask questions to clarify use cases and constraints.
+> Discuss assumptions.
+
+Without an interviewer to address clarifying questions, we'll define some use cases and constraints.
+
+#### Use cases
+
+##### We'll scope the problem to handle only the following use cases
+
+* **User** connects to a financial account
+* **Service** extracts transactions from the account
+    * Updates daily
+    * Categorizes transactions
+        * Allows manual category override by the user
+        * No automatic re-categorization
+    * Analyzes monthly spending, by category
+* **Service** recommends a budget
+    * Allows users to manually set a budget
+    * Sends notifications when approaching or exceeding budget
+* **Service** has high availability
+
+##### Out of scope
+
+* **Service** performs additional logging and analytics
+
+#### Constraints and assumptions
+
+##### State assumptions
+
+* Traffic is not evenly distributed
+* Automatic daily update of accounts applies only to users active in the past 30 days
+* Adding or removing financial accounts is relatively rare
+* Budget notifications don't need to be instant
+* 10 million users
+    * 10 budget categories per user = 100 million budget items
+    * Example categories:
+        * Housing = $1,000
+        * Food = $200
+        * Gas = $100
+    * Sellers are used to determine transaction category
+        * 50,000 sellers
+* 30 million financial accounts
+* 5 billion transactions per month
+* 500 million read requests per month
+* 10:1 write to read ratio
+    * Write-heavy, users make transactions daily, but few visit the site daily
+
+##### Calculate usage
+
+**Clarify with your interviewer if you should run back-of-the-envelope usage calculations.**
+
+* Size per transaction:
+    * `user_id` - 8 bytes
+    * `created_at` - 5 bytes
+    * `seller` - 32 bytes
+    * `amount` - 5 bytes
+    * Total: ~50 bytes
+* 250 GB of new transaction content per month
+    * 50 bytes per transaction * 5 billion transactions per month
+    * 9 TB of new transaction content in 3 years
+    * Assume most are new transactions instead of updates to existing ones
+* 2,000 transactions per second on average
+* 200 read requests per second on average
+
+Handy conversion guide:
+
+* 2.5 million seconds per month
+* 1 request per second = 2.5 million requests per month
+* 40 requests per second = 100 million requests per month
+* 400 requests per second = 1 billion requests per month
+
+### Step 2: Create a high level design
+
+> Outline a high level design with all important components.
+
+<img src="../../../sd-images/sol/mint_mint_basic.png" alt="Imgur" loading="lazy" />
+
+### Step 3: Design core components
+
+> Dive into details for each core component.
+
+#### Use case: User connects to a financial account
+
+We could store info on the 10 million users in a [relational database](../../2-khoi-xay-dung/04-sql/#relational-database-management-system-rdbms).  We should discuss the [use cases and tradeoffs between choosing SQL or NoSQL](../../2-khoi-xay-dung/05-nosql/#sql-or-nosql).
+
+* The **Client** sends a request to the **Web Server**, running as a [reverse proxy](../../2-khoi-xay-dung/02-reverse-proxy/#reverse-proxy-web-server)
+* The **Web Server** forwards the request to the **Accounts API** server
+* The **Accounts API** server updates the **SQL Database** `accounts` table with the newly entered account info
+
+**Clarify with your interviewer how much code you are expected to write**.
+
+The `accounts` table could have the following structure:
+
+```
+id int NOT NULL AUTO_INCREMENT
+created_at datetime NOT NULL
+last_update datetime NOT NULL
+account_url varchar(255) NOT NULL
+account_login varchar(32) NOT NULL
+account_password_hash char(64) NOT NULL
+user_id int NOT NULL
+PRIMARY KEY(id)
+FOREIGN KEY(user_id) REFERENCES users(id)
+```
+
+We'll create an [index](../../2-khoi-xay-dung/04-sql/#use-good-indices) on `id`, `user_id `, and `created_at` to speed up lookups (log-time instead of scanning the entire table) and to keep the data in memory.  Reading 1 MB sequentially from memory takes about 250 microseconds, while reading from SSD takes 4x and from disk takes 80x longer.<sup><a href=https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know>1</a></sup>
+
+We'll use a public [**REST API**](../../1-nen-tang/05-communication/#representational-state-transfer-rest):
+
+```
+$ curl -X POST --data '{ "user_id": "foo", "account_url": "bar", \
+    "account_login": "baz", "account_password": "qux" }' \
+    https://mint.com/api/v1/account
+```
+
+For internal communications, we could use [Remote Procedure Calls](../../1-nen-tang/05-communication/#remote-procedure-call-rpc).
+
+Next, the service extracts transactions from the account.
+
+#### Use case: Service extracts transactions from the account
+
+We'll want to extract information from an account in these cases:
+
+* The user first links the account
+* The user manually refreshes the account
+* Automatically each day for users who have been active in the past 30 days
+
+Data flow:
+
+* The **Client** sends a request to the **Web Server**
+* The **Web Server** forwards the request to the **Accounts API** server
+* The **Accounts API** server places a job on a **Queue** such as [Amazon SQS](https://aws.amazon.com/sqs/ "Trang sản phẩm Amazon SQS, dịch vụ message queue được quản lý, gồm standard và FIFO queue để tách rời các microservice. Tổng quan tính năng và trường hợp dùng.") or [RabbitMQ](https://www.rabbitmq.com/ "Trang chủ RabbitMQ, message broker mã nguồn mở hỗ trợ hàng đợi và streaming cho microservice. Điểm vào để tìm hiểu message queue và giao tiếp bất đồng bộ.")
+    * Extracting transactions could take awhile, we'd probably want to do this [asynchronously with a queue](../../2-khoi-xay-dung/07-async/#asynchronism), although this introduces additional complexity
+* The **Transaction Extraction Service** does the following:
+    * Pulls from the **Queue** and extracts transactions for the given account from the financial institution, storing the results as raw log files in the **Object Store**
+    * Uses the **Category Service** to categorize each transaction
+    * Uses the **Budget Service** to calculate aggregate monthly spending by category
+        * The **Budget Service** uses the **Notification Service** to let users know if they are nearing or have exceeded their budget
+    * Updates the **SQL Database** `transactions` table with categorized transactions
+    * Updates the **SQL Database** `monthly_spending` table with aggregate monthly spending by category
+    * Notifies the user the transactions have completed through the **Notification Service**:
+        * Uses a **Queue** (not pictured) to asynchronously send out notifications
+
+The `transactions` table could have the following structure:
+
+```
+id int NOT NULL AUTO_INCREMENT
+created_at datetime NOT NULL
+seller varchar(32) NOT NULL
+amount decimal NOT NULL
+user_id int NOT NULL
+PRIMARY KEY(id)
+FOREIGN KEY(user_id) REFERENCES users(id)
+```
+
+We'll create an [index](../../2-khoi-xay-dung/04-sql/#use-good-indices) on `id`, `user_id `, and `created_at`.
+
+The `monthly_spending` table could have the following structure:
+
+```
+id int NOT NULL AUTO_INCREMENT
+month_year date NOT NULL
+category varchar(32)
+amount decimal NOT NULL
+user_id int NOT NULL
+PRIMARY KEY(id)
+FOREIGN KEY(user_id) REFERENCES users(id)
+```
+
+We'll create an [index](../../2-khoi-xay-dung/04-sql/#use-good-indices) on `id` and `user_id `.
+
+##### Category service
+
+For the **Category Service**, we can seed a seller-to-category dictionary with the most popular sellers.  If we estimate 50,000 sellers and estimate each entry to take less than 255 bytes, the dictionary would only take about 12 MB of memory.
+
+**Clarify with your interviewer how much code you are expected to write**.
+
+```python
+class DefaultCategories(Enum):
+
+    HOUSING = 0
+    FOOD = 1
+    GAS = 2
+    SHOPPING = 3
+    ...
+
+seller_category_map = {}
+seller_category_map['Exxon'] = DefaultCategories.GAS
+seller_category_map['Target'] = DefaultCategories.SHOPPING
+...
+```
+
+For sellers not initially seeded in the map, we could use a crowdsourcing effort by evaluating the manual category overrides our users provide.  We could use a heap to quickly lookup the top manual override per seller in O(1) time.
+
+```python
+class Categorizer(object):
+
+    def __init__(self, seller_category_map, seller_category_crowd_overrides_map):
+        self.seller_category_map = seller_category_map
+        self.seller_category_crowd_overrides_map = \
+            seller_category_crowd_overrides_map
+
+    def categorize(self, transaction):
+        if transaction.seller in self.seller_category_map:
+            return self.seller_category_map[transaction.seller]
+        elif transaction.seller in self.seller_category_crowd_overrides_map:
+            self.seller_category_map[transaction.seller] = \
+                self.seller_category_crowd_overrides_map[transaction.seller].peek_min()
+            return self.seller_category_map[transaction.seller]
+        return None
+```
+
+Transaction implementation:
+
+```python
+class Transaction(object):
+
+    def __init__(self, created_at, seller, amount):
+        self.created_at = created_at
+        self.seller = seller
+        self.amount = amount
+```
+
+#### Use case: Service recommends a budget
+
+To start, we could use a generic budget template that allocates category amounts based on income tiers.  Using this approach, we would not have to store the 100 million budget items identified in the constraints, only those that the user overrides.  If a user overrides a budget category, which we could store the override in the `TABLE budget_overrides`.
+
+```python
+class Budget(object):
+
+    def __init__(self, income):
+        self.income = income
+        self.categories_to_budget_map = self.create_budget_template()
+
+    def create_budget_template(self):
+        return {
+            DefaultCategories.HOUSING: self.income * .4,
+            DefaultCategories.FOOD: self.income * .2,
+            DefaultCategories.GAS: self.income * .1,
+            DefaultCategories.SHOPPING: self.income * .2,
+            ...
+        }
+
+    def override_category_budget(self, category, amount):
+        self.categories_to_budget_map[category] = amount
+```
+
+For the **Budget Service**, we can potentially run SQL queries on the `transactions` table to generate the `monthly_spending` aggregate table.  The `monthly_spending` table would likely have much fewer rows than the total 5 billion transactions, since users typically have many transactions per month.
+
+As an alternative, we can run **MapReduce** jobs on the raw transaction files to:
+
+* Categorize each transaction
+* Generate aggregate monthly spending by category
+
+Running analyses on the transaction files could significantly reduce the load on the database.
+
+We could call the **Budget Service** to re-run the analysis if the user updates a category.
+
+**Clarify with your interviewer how much code you are expected to write**.
+
+Sample log file format, tab delimited:
+
+```
+user_id   timestamp   seller  amount
+```
+
+**MapReduce** implementation:
+
+```python
+class SpendingByCategory(MRJob):
+
+    def __init__(self, categorizer):
+        self.categorizer = categorizer
+        self.current_year_month = calc_current_year_month()
+        ...
+
+    def calc_current_year_month(self):
+        """Return the current year and month."""
+        ...
+
+    def extract_year_month(self, timestamp):
+        """Return the year and month portions of the timestamp."""
+        ...
+
+    def handle_budget_notifications(self, key, total):
+        """Call notification API if nearing or exceeded budget."""
+        ...
+
+    def mapper(self, _, line):
+        """Parse each log line, extract and transform relevant lines.
+
+        Argument line will be of the form:
+
+        user_id   timestamp   seller  amount
+
+        Using the categorizer to convert seller to category,
+        emit key value pairs of the form:
+
+        (user_id, 2016-01, shopping), 25
+        (user_id, 2016-01, shopping), 100
+        (user_id, 2016-01, gas), 50
+        """
+        user_id, timestamp, seller, amount = line.split('\t')
+        category = self.categorizer.categorize(seller)
+        period = self.extract_year_month(timestamp)
+        if period == self.current_year_month:
+            yield (user_id, period, category), amount
+
+    def reducer(self, key, value):
+        """Sum values for each key.
+
+        (user_id, 2016-01, shopping), 125
+        (user_id, 2016-01, gas), 50
+        """
+        total = sum(values)
+        yield key, sum(values)
+```
+
+### Step 4: Scale the design
+
+> Identify and address bottlenecks, given the constraints.
+
+<img src="../../../sd-images/V5q57vU.png" alt="Imgur" loading="lazy" />
+
+**Important: Do not simply jump right into the final design from the initial design!**
+
+State you would 1) **Benchmark/Load Test**, 2) **Profile** for bottlenecks 3) address bottlenecks while evaluating alternatives and trade-offs, and 4) repeat.  See [Design a system that scales to millions of users on AWS](../../4-thuc-chien/03-sol-scaling-aws/) as a sample on how to iteratively scale the initial design.
+
+It's important to discuss what bottlenecks you might encounter with the initial design and how you might address each of them.  For example, what issues are addressed by adding a **Load Balancer** with multiple **Web Servers**?  **CDN**?  **Master-Slave Replicas**?  What are the alternatives and **Trade-Offs** for each?
+
+We'll introduce some components to complete the design and to address scalability issues.  Internal load balancers are not shown to reduce clutter.
+
+*To avoid repeating discussions*, refer to the following [system design topics](../../) for main talking points, tradeoffs, and alternatives:
+
+* [DNS](../../1-nen-tang/06-dns/#domain-name-system)
+* [CDN](../../1-nen-tang/07-cdn/#content-delivery-network)
+* [Load balancer](../../2-khoi-xay-dung/01-load-balancer/)
+* [Horizontal scaling](../../2-khoi-xay-dung/01-load-balancer/#horizontal-scaling)
+* [Web server (reverse proxy)](../../2-khoi-xay-dung/02-reverse-proxy/#reverse-proxy-web-server)
+* [API server (application layer)](../../2-khoi-xay-dung/03-application-layer/)
+* [Cache](../../2-khoi-xay-dung/06-cache/)
+* [Relational database management system (RDBMS)](../../2-khoi-xay-dung/04-sql/#relational-database-management-system-rdbms)
+* [SQL write master-slave failover](../../3-he-phan-tan/03-availability/#fail-over)
+* [Master-slave replication](../../2-khoi-xay-dung/04-sql/#master-slave-replication)
+* [Asynchronism](../../2-khoi-xay-dung/07-async/#asynchronism)
+* [Consistency patterns](../../3-he-phan-tan/02-consistency/#consistency-patterns)
+* [Availability patterns](../../3-he-phan-tan/03-availability/#availability-patterns)
+
+We'll add an additional use case: **User** accesses summaries and transactions.
+
+User sessions, aggregate stats by category, and recent transactions could be placed in a **Memory Cache** such as Redis or Memcached.
+
+* The **Client** sends a read request to the **Web Server**
+* The **Web Server** forwards the request to the **Read API** server
+    * Static content can be served from the **Object Store** such as S3, which is cached on the **CDN**
+* The **Read API** server does the following:
+    * Checks the **Memory Cache** for the content
+        * If the url is in the **Memory Cache**, returns the cached contents
+        * Else
+            * If the url is in the **SQL Database**, fetches the contents
+                * Updates the **Memory Cache** with the contents
+
+Refer to [When to update the cache](../../2-khoi-xay-dung/06-cache/#when-to-update-the-cache) for tradeoffs and alternatives.  The approach above describes [cache-aside](../../2-khoi-xay-dung/06-cache/#cache-aside).
+
+Instead of keeping the `monthly_spending` aggregate table in the **SQL Database**, we could create a separate **Analytics Database** using a data warehousing solution such as Amazon Redshift or Google BigQuery.
+
+We might only want to store a month of `transactions` data in the database, while storing the rest in a data warehouse or in an **Object Store**.  An **Object Store** such as Amazon S3 can comfortably handle the constraint of 250 GB of new content per month.
+
+To address the 200 *average* read requests per second (higher at peak), traffic for popular content should be handled by the **Memory Cache** instead of the database.  The **Memory Cache** is also useful for handling the unevenly distributed traffic and traffic spikes.  The **SQL Read Replicas** should be able to handle the cache misses, as long as the replicas are not bogged down with replicating writes.
+
+2,000 *average* transaction writes per second (higher at peak) might be tough for a single **SQL Write Master-Slave**.  We might need to employ additional SQL scaling patterns:
+
+* [Federation](../../2-khoi-xay-dung/04-sql/#federation)
+* [Sharding](../../2-khoi-xay-dung/04-sql/#sharding)
+* [Denormalization](../../2-khoi-xay-dung/04-sql/#denormalization)
+* [SQL Tuning](../../2-khoi-xay-dung/04-sql/#sql-tuning)
+
+We should also consider moving some data to a **NoSQL Database**.
+
+### Additional talking points
+
+> Additional topics to dive into, depending on the problem scope and time remaining.
+
+##### NoSQL
+
+* [Key-value store](../../2-khoi-xay-dung/05-nosql/#key-value-store)
+* [Document store](../../2-khoi-xay-dung/05-nosql/#document-store)
+* [Wide column store](../../2-khoi-xay-dung/05-nosql/#wide-column-store)
+* [Graph database](../../2-khoi-xay-dung/05-nosql/#graph-database)
+* [SQL vs NoSQL](../../2-khoi-xay-dung/05-nosql/#sql-or-nosql)
+
+#### Caching
+
+* Where to cache
+    * [Client caching](../../2-khoi-xay-dung/06-cache/#client-caching)
+    * [CDN caching](../../2-khoi-xay-dung/06-cache/#cdn-caching)
+    * [Web server caching](../../2-khoi-xay-dung/06-cache/#web-server-caching)
+    * [Database caching](../../2-khoi-xay-dung/06-cache/#database-caching)
+    * [Application caching](../../2-khoi-xay-dung/06-cache/#application-caching)
+* What to cache
+    * [Caching at the database query level](../../2-khoi-xay-dung/06-cache/#caching-at-the-database-query-level)
+    * [Caching at the object level](../../2-khoi-xay-dung/06-cache/#caching-at-the-object-level)
+* When to update the cache
+    * [Cache-aside](../../2-khoi-xay-dung/06-cache/#cache-aside)
+    * [Write-through](../../2-khoi-xay-dung/06-cache/#write-through)
+    * [Write-behind (write-back)](../../2-khoi-xay-dung/06-cache/#write-behind-write-back)
+    * [Refresh ahead](../../2-khoi-xay-dung/06-cache/#refresh-ahead)
+
+#### Asynchronism and microservices
+
+* [Message queues](../../2-khoi-xay-dung/07-async/#message-queues)
+* [Task queues](../../2-khoi-xay-dung/07-async/#task-queues)
+* [Back pressure](../../2-khoi-xay-dung/07-async/#back-pressure)
+* [Microservices](../../2-khoi-xay-dung/03-application-layer/#microservices)
+
+#### Communications
+
+* Discuss tradeoffs:
+    * External communication with clients - [HTTP APIs following REST](../../1-nen-tang/05-communication/#representational-state-transfer-rest)
+    * Internal communications - [RPC](../../1-nen-tang/05-communication/#remote-procedure-call-rpc)
+* [Service discovery](../../2-khoi-xay-dung/03-application-layer/#service-discovery)
+
+#### Security
+
+Refer to the [security section](../../2-khoi-xay-dung/08-security/).
+
+#### Latency numbers
+
+See [Latency numbers every programmer should know](../../1-nen-tang/04-numbers/#latency-numbers-every-programmer-should-know).
+
+#### Ongoing
+
+* Continue benchmarking and monitoring your system to address bottlenecks as they come up
+* Scaling is an iterative process
